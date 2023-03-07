@@ -1,0 +1,5717 @@
+---
+swagger: "2.0"
+info:
+  description: "### The Internet of Things for Everyone\n\nThe Adafruit IO HTTP API\
+    \ provides access to your Adafruit IO data from any programming language or hardware\
+    \ environment that can speak HTTP. The easiest way to get started is with [an\
+    \ Adafruit IO learn guide](https://learn.adafruit.com/series/adafruit-io-basics)\
+    \ and [a simple Internet of Things capable device like the Feather Huzzah](https://www.adafruit.com/product/2821).\n\
+    \nThis API documentation is hosted on GitHub Pages and is available at [https://github.com/adafruit/io-api](https://github.com/adafruit/io-api).\
+    \ For questions or comments visit the [Adafruit IO Forums](https://forums.adafruit.com/viewforum.php?f=56)\
+    \ or the [adafruit-io channel on the Adafruit Discord server](https://discord.gg/adafruit).\n\
+    \n#### Authentication\n\nAuthentication for every API request happens through\
+    \ the `X-AIO-Key` header or query parameter and your IO API key. A simple cURL\
+    \ request to get all available feeds for a user with the username \"io_username\"\
+    \ and the key \"io_key_12345\" could look like this:\n\n    $ curl -H \"X-AIO-Key:\
+    \ io_key_12345\" https://io.adafruit.com/api/v2/io_username/feeds\n\nOr like this:\n\
+    \n    $ curl \"https://io.adafruit.com/api/v2/io_username/feeds?X-AIO-Key=io_key_12345\n\
+    \nUsing the node.js [request](https://github.com/request/request) library, IO\
+    \ HTTP requests are as easy as:\n\n```js\nvar request = require('request');\n\n\
+    var options = {\n  url: 'https://io.adafruit.com/api/v2/io_username/feeds',\n\
+    \  headers: {\n    'X-AIO-Key': 'io_key_12345',\n    'Content-Type': 'application/json'\n\
+    \  }\n};\n\nfunction callback(error, response, body) {\n  if (!error && response.statusCode\
+    \ == 200) {\n    var feeds = JSON.parse(body);\n    console.log(feeds.length +\
+    \ \" FEEDS AVAILABLE\");\n\n    feeds.forEach(function (feed) {\n      console.log(feed.name,\
+    \ feed.key);\n    })\n  }\n}\n\nrequest(options, callback);\n```\n\nUsing the\
+    \ ESP8266 Arduino HTTPClient library, an HTTPS GET request would look like this\
+    \ (replacing `---` with your own values in the appropriate locations):\n\n```arduino\n\
+    /// based on\n/// https://github.com/esp8266/Arduino/blob/master/libraries/ESP8266HTTPClient/examples/Authorization/Authorization.ino\n\
+    \n#include <Arduino.h>\n#include <ESP8266WiFi.h>\n#include <ESP8266WiFiMulti.h>\n\
+    #include <ESP8266HTTPClient.h>\n\nESP8266WiFiMulti WiFiMulti;\n\nconst char* ssid\
+    \ = \"---\";\nconst char* password = \"---\";\n\nconst char* host = \"io.adafruit.com\"\
+    ;\n\nconst char* io_key = \"---\";\nconst char* path_with_username = \"/api/v2/---/dashboards\"\
+    ;\n\n// Use web browser to view and copy\n// SHA1 fingerprint of the certificate\n\
+    const char* fingerprint = \"77 00 54 2D DA E7 D8 03 27 31 23 99 EB 27 DB CB A5\
+    \ 4C 57 18\";\n\nvoid setup() {\n  Serial.begin(115200);\n\n  for(uint8_t t =\
+    \ 4; t > 0; t--) {\n    Serial.printf(\"[SETUP] WAIT %d...\\n\", t);\n    Serial.flush();\n\
+    \    delay(1000);\n  }\n\n  WiFi.mode(WIFI_STA);\n  WiFiMulti.addAP(ssid, password);\n\
+    \n  // wait for WiFi connection\n  while(WiFiMulti.run() != WL_CONNECTED) {\n\
+    \    Serial.print('.');\n    delay(1000);\n  }\n\n  Serial.println(\"[WIFI] connected!\"\
+    );\n\n  HTTPClient http;\n\n  // start request with URL and TLS cert fingerprint\
+    \ for verification\n  http.begin(\"https://\" + String(host) + String(path_with_username),\
+    \ fingerprint);\n\n  // IO API authentication\n  http.addHeader(\"X-AIO-Key\"\
+    , io_key);\n\n  // start connection and send HTTP header\n  int httpCode = http.GET();\n\
+    \n  // httpCode will be negative on error\n  if(httpCode > 0) {\n    // HTTP header\
+    \ has been send and Server response header has been handled\n    Serial.printf(\"\
+    [HTTP] GET response: %d\\n\", httpCode);\n\n    // HTTP 200 OK\n    if(httpCode\
+    \ == HTTP_CODE_OK) {\n      String payload = http.getString();\n      Serial.println(payload);\n\
+    \    }\n\n    http.end();\n  }\n}\n\nvoid loop() {}\n```\n\n#### Client Libraries\n\
+    \nWe have client libraries to help you get started with your project: [Python](https://github.com/adafruit/io-client-python),\
+    \ [Ruby](https://github.com/adafruit/io-client-ruby), [Arduino C++](https://github.com/adafruit/Adafruit_IO_Arduino),\
+    \ [Javascript](https://github.com/adafruit/adafruit-io-node), and [Go](https://github.com/adafruit/io-client-go)\
+    \ are available. They're all open source, so if they don't already do what you\
+    \ want, you can fork and add any feature you'd like.\n\n"
+  version: "2.0.0"
+  title: "Adafruit IO REST API"
+  x-logo:
+    url: "https://io.adafruit.com/api/docs/adafruit-flower-left.png"
+host: "io.adafruit.com"
+basePath: "/api/v2"
+schemes:
+- "https"
+- "http"
+produces:
+- "application/json"
+- "text/csv"
+security:
+- HeaderKey: []
+- HeaderSignature: []
+- QueryKey: []
+paths:
+  /user:
+    get:
+      tags:
+      - "Users"
+      summary: "Get information about the current user"
+      operationId: "currentUser"
+      parameters: []
+      responses:
+        "200":
+          description: "A User record"
+          schema:
+            $ref: "#/definitions/User"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Users"
+      x-swagger-router-action: "get"
+  /{username}/throttle:
+    get:
+      tags:
+      - "Users"
+      summary: "Get the user's data rate limit and current activity level."
+      operationId: "getCurrentUserThrottle"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      responses:
+        "200":
+          description: "Data rate limit and current actions."
+          schema:
+            $ref: "#/definitions/inline_response_200"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Users"
+      x-swagger-router-action: "throttle"
+  /{username}/activities:
+    get:
+      tags:
+      - "Activities"
+      summary: "All activities for current user"
+      description: "The Activities endpoint returns information about the user's activities."
+      operationId: "allActivities"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "start_time"
+        in: "query"
+        description: "Start time for filtering, returns records created after given\
+          \ time."
+        required: false
+        type: "string"
+        format: "date-time"
+        x-exportParamName: "StartTime"
+        x-optionalDataType: "Time"
+      - name: "end_time"
+        in: "query"
+        description: "End time for filtering, returns records created before give\
+          \ time."
+        required: false
+        type: "string"
+        format: "date-time"
+        x-exportParamName: "EndTime"
+        x-optionalDataType: "Time"
+      - name: "limit"
+        in: "query"
+        description: "Limit the number of records returned."
+        required: false
+        type: "integer"
+        x-exportParamName: "Limit"
+        x-optionalDataType: "Int32"
+      responses:
+        "200":
+          description: "An array of activities"
+          headers:
+            X-Pagination-Limit:
+              type: "integer"
+              description: "The limit this request is using, either your given value\
+                \ or the default (1000)."
+            X-Pagination-Count:
+              type: "integer"
+              description: "The number of records returned."
+            X-Pagination-Start:
+              type: "string"
+              description: "The created_at value for the oldest record returned."
+            X-Pagination-End:
+              type: "string"
+              description: "The created_at value for the newest record returned."
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Activity"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Activities"
+      x-swagger-router-action: "all"
+    delete:
+      tags:
+      - "Activities"
+      summary: "All activities for current user"
+      description: "Delete all your activities."
+      operationId: "destroyActivities"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      responses:
+        "200":
+          description: "Deleted activities successfully"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Activities"
+      x-swagger-router-action: "destroy"
+  /{username}/activities/{type}:
+    get:
+      tags:
+      - "Activities"
+      summary: "Get activities by type for current user"
+      description: "The Activities endpoint returns information about the user's activities."
+      operationId: "getActivity"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "type"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Type_"
+      - name: "start_time"
+        in: "query"
+        description: "Start time for filtering, returns records created after given\
+          \ time."
+        required: false
+        type: "string"
+        format: "date-time"
+        x-exportParamName: "StartTime"
+        x-optionalDataType: "Time"
+      - name: "end_time"
+        in: "query"
+        description: "End time for filtering, returns records created before give\
+          \ time."
+        required: false
+        type: "string"
+        format: "date-time"
+        x-exportParamName: "EndTime"
+        x-optionalDataType: "Time"
+      - name: "limit"
+        in: "query"
+        description: "Limit the number of records returned."
+        required: false
+        type: "integer"
+        x-exportParamName: "Limit"
+        x-optionalDataType: "Int32"
+      responses:
+        "200":
+          description: "An array of activities"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Activity"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Activities"
+      x-swagger-router-action: "get"
+  /{username}/feeds:
+    get:
+      tags:
+      - "Feeds"
+      summary: "All feeds for current user"
+      description: "The Feeds endpoint returns information about the user's feeds.\
+        \ The response includes the latest value of each feed, and other metadata\
+        \ about each feed."
+      operationId: "allFeeds"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      responses:
+        "200":
+          description: "An array of feeds"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Feed"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Feeds"
+      x-swagger-router-action: "all"
+    post:
+      tags:
+      - "Feeds"
+      summary: "Create a new Feed"
+      description: ""
+      operationId: "createFeed"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "group_key"
+        in: "query"
+        required: false
+        type: "string"
+        x-exportParamName: "GroupKey"
+        x-optionalDataType: "String"
+      - in: "body"
+        name: "feed"
+        required: true
+        schema:
+          $ref: "#/definitions/feed"
+        x-exportParamName: "Feed"
+      responses:
+        "200":
+          description: "New feed"
+          schema:
+            $ref: "#/definitions/Feed"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Feeds"
+      x-swagger-router-action: "create"
+  /{username}/feeds/{feed_key}:
+    get:
+      tags:
+      - "Feeds"
+      summary: "Get feed by feed key"
+      description: "Returns feed based on the feed key"
+      operationId: "getFeed"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "feed_key"
+        in: "path"
+        description: "a valid feed key"
+        required: true
+        type: "string"
+        x-exportParamName: "FeedKey"
+      responses:
+        "200":
+          description: "Feed response"
+          schema:
+            $ref: "#/definitions/Feed"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Feeds"
+      x-swagger-router-action: "get"
+    put:
+      tags:
+      - "Feeds"
+      summary: "Replace an existing Feed"
+      description: ""
+      operationId: "replaceFeed"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "feed_key"
+        in: "path"
+        description: "a valid feed key"
+        required: true
+        type: "string"
+        x-exportParamName: "FeedKey"
+      - in: "body"
+        name: "feed"
+        required: true
+        schema:
+          $ref: "#/definitions/feed"
+        x-exportParamName: "Feed"
+      responses:
+        "200":
+          description: "Updated feed"
+          schema:
+            $ref: "#/definitions/Feed"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Feeds"
+      x-swagger-router-action: "replace"
+    delete:
+      tags:
+      - "Feeds"
+      summary: "Delete an existing Feed"
+      description: ""
+      operationId: "destroyFeed"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "feed_key"
+        in: "path"
+        description: "a valid feed key"
+        required: true
+        type: "string"
+        x-exportParamName: "FeedKey"
+      responses:
+        "200":
+          description: "Deleted feed successfully"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Feeds"
+      x-swagger-router-action: "destroy"
+    patch:
+      tags:
+      - "Feeds"
+      summary: "Update properties of an existing Feed"
+      description: ""
+      operationId: "updateFeed"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "feed_key"
+        in: "path"
+        description: "a valid feed key"
+        required: true
+        type: "string"
+        x-exportParamName: "FeedKey"
+      - in: "body"
+        name: "feed"
+        required: true
+        schema:
+          $ref: "#/definitions/feed"
+        x-exportParamName: "Feed"
+      responses:
+        "200":
+          description: "Updated feed"
+          schema:
+            $ref: "#/definitions/Feed"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Feeds"
+      x-swagger-router-action: "update"
+  /{username}/feeds/{feed_key}/details:
+    get:
+      tags:
+      - "Feeds"
+      summary: "Get detailed feed by feed key"
+      description: "Returns more detailed feed record based on the feed key"
+      operationId: "getFeedDetails"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "feed_key"
+        in: "path"
+        description: "a valid feed key"
+        required: true
+        type: "string"
+        x-exportParamName: "FeedKey"
+      responses:
+        "200":
+          description: "Feed response"
+          schema:
+            $ref: "#/definitions/Feed"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Feeds"
+      x-swagger-router-action: "details"
+  /{username}/feeds/{feed_key}/data:
+    get:
+      tags:
+      - "Data"
+      summary: "Get all data for the given feed"
+      description: ""
+      operationId: "allData"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "feed_key"
+        in: "path"
+        description: "a valid feed key"
+        required: true
+        type: "string"
+        x-exportParamName: "FeedKey"
+      - name: "start_time"
+        in: "query"
+        description: "Start time for filtering, returns records created after given\
+          \ time."
+        required: false
+        type: "string"
+        format: "date-time"
+        x-exportParamName: "StartTime"
+        x-optionalDataType: "Time"
+      - name: "end_time"
+        in: "query"
+        description: "End time for filtering, returns records created before give\
+          \ time."
+        required: false
+        type: "string"
+        format: "date-time"
+        x-exportParamName: "EndTime"
+        x-optionalDataType: "Time"
+      - name: "limit"
+        in: "query"
+        description: "Limit the number of records returned."
+        required: false
+        type: "integer"
+        x-exportParamName: "Limit"
+        x-optionalDataType: "Int32"
+      - name: "include"
+        in: "query"
+        description: "List of Data record fields to include in response as comma separated\
+          \ list. Acceptable values are: `value`, `lat`, `lon`, `ele`, `id`, and `created_at`. "
+        required: false
+        type: "string"
+        x-exportParamName: "Include"
+        x-optionalDataType: "String"
+      responses:
+        "200":
+          description: "An array of data"
+          headers:
+            X-Pagination-Limit:
+              type: "integer"
+              description: "The limit this request is using, either your given value\
+                \ or the default (1000)."
+            X-Pagination-Count:
+              type: "integer"
+              description: "The number of records returned."
+            X-Pagination-Start:
+              type: "string"
+              description: "The created_at value for the oldest record returned."
+            X-Pagination-End:
+              type: "string"
+              description: "The created_at value for the newest record returned."
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/DataResponse"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Data"
+      x-swagger-router-action: "all"
+    post:
+      tags:
+      - "Data"
+      summary: "Create new Data"
+      description: "Create new data records on the given feed.\n\n**NOTE:** when feed\
+        \ history is on, data `value` size is limited to 1KB, when feed history is\
+        \ turned off data value size is limited to 100KB."
+      operationId: "createData"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "feed_key"
+        in: "path"
+        description: "a valid feed key"
+        required: true
+        type: "string"
+        x-exportParamName: "FeedKey"
+      - in: "body"
+        name: "datum"
+        description: "Data record including a `value` field (required) and optionally\
+          \ including: `lat`, `lon`, `ele` (latitude, longitude, and elevation values),\
+          \ and `created_at` (a date/time string)."
+        required: true
+        schema:
+          $ref: "#/definitions/datum"
+        x-exportParamName: "Datum"
+      responses:
+        "200":
+          description: "New data"
+          schema:
+            $ref: "#/definitions/Data"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Data"
+      x-swagger-router-action: "create"
+      x-code-samples:
+      - lang: "curl"
+        source: "curl -F 'value=65.5' -H 'X-AIO-Key: io_key_12345' \\\n  https://io.adafruit.com/api/v2/io_username/feeds/io-feed-key/data"
+      - lang: "Ruby"
+        source: "api = Adafruit::IO::Client.new(\n  key: ENV['IO_KEY'],\n  username:\
+          \ ENV['IO_USERNAME']\n)\napi.send_data('io-feed-key', 65.5)"
+  /{username}/feeds/{feed_key}/data/chart:
+    get:
+      tags:
+      - "Data"
+      summary: "Chart data for current feed"
+      description: "The Chart API is what we use on io.adafruit.com to populate charts\
+        \ over varying timespans with a consistent number of data points. The maximum\
+        \ number of points returned is 480. This API works by aggregating slices of\
+        \ time into a single value by averaging.\n\nAll time-based parameters are\
+        \ optional, if none are given it will default to 1 hour at the finest-grained\
+        \ resolution possible."
+      operationId: "chartData"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "feed_key"
+        in: "path"
+        description: "a valid feed key"
+        required: true
+        type: "string"
+        x-exportParamName: "FeedKey"
+      - name: "start_time"
+        in: "query"
+        description: "Start time for filtering, returns records created after given\
+          \ time."
+        required: false
+        type: "string"
+        format: "date-time"
+        x-exportParamName: "StartTime"
+        x-optionalDataType: "Time"
+      - name: "end_time"
+        in: "query"
+        description: "End time for filtering, returns records created before give\
+          \ time."
+        required: false
+        type: "string"
+        format: "date-time"
+        x-exportParamName: "EndTime"
+        x-optionalDataType: "Time"
+      - name: "resolution"
+        in: "query"
+        description: "A resolution size in minutes. By giving a resolution value you\
+          \ will get back grouped data points aggregated over resolution-sized intervals.\
+          \ NOTE: time span is preferred over resolution, so if you request a span\
+          \ of time that includes more than max limit points you may get a larger\
+          \ resolution than you requested. Valid resolutions are 1, 5, 10, 30, 60,\
+          \ and 120."
+        required: false
+        type: "integer"
+        format: "int32"
+        x-exportParamName: "Resolution"
+        x-optionalDataType: "Int32"
+      - name: "hours"
+        in: "query"
+        description: "The number of hours the chart should cover."
+        required: false
+        type: "integer"
+        format: "int32"
+        x-exportParamName: "Hours"
+        x-optionalDataType: "Int32"
+      responses:
+        "200":
+          description: "A JSON record containing chart data and the parameters used\
+            \ to generate it."
+          schema:
+            $ref: "#/definitions/inline_response_200_1"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Data"
+      x-swagger-router-action: "chart"
+  /{username}/feeds/{feed_key}/data/batch:
+    post:
+      tags:
+      - "Data"
+      summary: "Create multiple new Data records"
+      operationId: "batchCreateData"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "feed_key"
+        in: "path"
+        description: "a valid feed key"
+        required: true
+        type: "string"
+        x-exportParamName: "FeedKey"
+      - in: "body"
+        name: "data"
+        description: "A collection of data records including `value` (required) and\
+          \ optionally including: `lat`, `lon`, `ele` (latitude, longitude, and elevation\
+          \ values), and `created_at` (a date/time string)."
+        required: true
+        schema:
+          type: "array"
+          items:
+            $ref: "#/definitions/datum"
+        x-exportParamName: "Data"
+      responses:
+        "200":
+          description: "New data"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/DataResponse"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Data"
+      x-swagger-router-action: "batch"
+  /{username}/feeds/{feed_key}/data/previous:
+    get:
+      tags:
+      - "Data"
+      summary: "Previous Data in Queue"
+      description: "Get the previously processed data point in the feed. NOTE: this\
+        \ method doesn't move the processing queue pointer."
+      operationId: "previousData"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "feed_key"
+        in: "path"
+        description: "a valid feed key"
+        required: true
+        type: "string"
+        x-exportParamName: "FeedKey"
+      - name: "include"
+        in: "query"
+        description: "List of Data record fields to include in response as comma separated\
+          \ list. Acceptable values are: `value`, `lat`, `lon`, `ele`, `id`, and `created_at`. "
+        required: false
+        type: "string"
+        x-exportParamName: "Include"
+        x-optionalDataType: "String"
+      responses:
+        "200":
+          description: "Data response"
+          schema:
+            $ref: "#/definitions/DataResponse"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Data"
+      x-swagger-router-action: "previous"
+  /{username}/feeds/{feed_key}/data/next:
+    get:
+      tags:
+      - "Data"
+      summary: "Next Data in Queue"
+      description: "Get the next newest data point in the feed. If queue processing\
+        \ hasn't been started, the first data point in the feed will be returned."
+      operationId: "nextData"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "feed_key"
+        in: "path"
+        description: "a valid feed key"
+        required: true
+        type: "string"
+        x-exportParamName: "FeedKey"
+      - name: "include"
+        in: "query"
+        description: "List of Data record fields to include in response as comma separated\
+          \ list. Acceptable values are: `value`, `lat`, `lon`, `ele`, `id`, and `created_at`. "
+        required: false
+        type: "string"
+        x-exportParamName: "Include"
+        x-optionalDataType: "String"
+      responses:
+        "200":
+          description: "Data response"
+          schema:
+            $ref: "#/definitions/DataResponse"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Data"
+      x-swagger-router-action: "next"
+  /{username}/feeds/{feed_key}/data/last:
+    get:
+      tags:
+      - "Data"
+      summary: "Last Data in Queue"
+      description: "Get the most recent data point in the feed. This request sets\
+        \ the queue pointer to the end of the feed."
+      operationId: "lastData"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "feed_key"
+        in: "path"
+        description: "a valid feed key"
+        required: true
+        type: "string"
+        x-exportParamName: "FeedKey"
+      - name: "include"
+        in: "query"
+        description: "List of Data record fields to include in response as comma separated\
+          \ list. Acceptable values are: `value`, `lat`, `lon`, `ele`, `id`, and `created_at`. "
+        required: false
+        type: "string"
+        x-exportParamName: "Include"
+        x-optionalDataType: "String"
+      responses:
+        "200":
+          description: "Data response"
+          schema:
+            $ref: "#/definitions/DataResponse"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Data"
+      x-swagger-router-action: "last"
+  /{username}/feeds/{feed_key}/data/first:
+    get:
+      tags:
+      - "Data"
+      summary: "First Data in Queue"
+      description: "Get the oldest data point in the feed. This request sets the queue\
+        \ pointer to the beginning of the feed."
+      operationId: "firstData"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "feed_key"
+        in: "path"
+        description: "a valid feed key"
+        required: true
+        type: "string"
+        x-exportParamName: "FeedKey"
+      - name: "include"
+        in: "query"
+        description: "List of Data record fields to include in response as comma separated\
+          \ list. Acceptable values are: `value`, `lat`, `lon`, `ele`, `id`, and `created_at`. "
+        required: false
+        type: "string"
+        x-exportParamName: "Include"
+        x-optionalDataType: "String"
+      responses:
+        "200":
+          description: "Data response"
+          schema:
+            $ref: "#/definitions/DataResponse"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Data"
+      x-swagger-router-action: "last"
+  /{username}/feeds/{feed_key}/data/retain:
+    get:
+      tags:
+      - "Data"
+      summary: "Last Data in MQTT CSV format"
+      description: "Get the most recent data point in the feed in an MQTT compatible\
+        \ CSV format: `value,lat,lon,ele`"
+      operationId: "retainData"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      produces:
+      - "text/csv"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "feed_key"
+        in: "path"
+        description: "a valid feed key"
+        required: true
+        type: "string"
+        x-exportParamName: "FeedKey"
+      responses:
+        "200":
+          description: "CSV string in `value,lat,lon,ele` format. The lat, lon, and\
+            \ ele values are left blank if they are not set."
+          schema:
+            type: "string"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Data"
+      x-swagger-router-action: "retain"
+  /{username}/feeds/{feed_key}/data/{id}:
+    get:
+      tags:
+      - "Data"
+      summary: "Returns data based on feed key"
+      description: ""
+      operationId: "getData"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "feed_key"
+        in: "path"
+        description: "a valid feed key"
+        required: true
+        type: "string"
+        x-exportParamName: "FeedKey"
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Id"
+      - name: "include"
+        in: "query"
+        description: "List of Data record fields to include in response as comma separated\
+          \ list. Acceptable values are: `value`, `lat`, `lon`, `ele`, `id`, and `created_at`. "
+        required: false
+        type: "string"
+        x-exportParamName: "Include"
+        x-optionalDataType: "String"
+      responses:
+        "200":
+          description: "Data response"
+          schema:
+            $ref: "#/definitions/DataResponse"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Data"
+      x-swagger-router-action: "get"
+    put:
+      tags:
+      - "Data"
+      summary: "Replace existing Data"
+      description: ""
+      operationId: "replaceData"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "feed_key"
+        in: "path"
+        description: "a valid feed key"
+        required: true
+        type: "string"
+        x-exportParamName: "FeedKey"
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Id"
+      - in: "body"
+        name: "datum"
+        description: "Data record including a `value` field (required) and optionally\
+          \ including: `lat`, `lon`, `ele` (latitude, longitude, and elevation values),\
+          \ and `created_at` (a date/time string)."
+        required: true
+        schema:
+          $ref: "#/definitions/datum"
+        x-exportParamName: "Datum"
+      responses:
+        "200":
+          description: "Updated Data"
+          schema:
+            $ref: "#/definitions/DataResponse"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Data"
+      x-swagger-router-action: "replace"
+    delete:
+      tags:
+      - "Data"
+      summary: "Delete existing Data"
+      description: ""
+      operationId: "destroyData"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "feed_key"
+        in: "path"
+        description: "a valid feed key"
+        required: true
+        type: "string"
+        x-exportParamName: "FeedKey"
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Id"
+      responses:
+        "200":
+          description: "Deleted Group successfully"
+          schema:
+            type: "string"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Data"
+      x-swagger-router-action: "destroy"
+    patch:
+      tags:
+      - "Data"
+      summary: "Update properties of existing Data"
+      description: ""
+      operationId: "updateData"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "feed_key"
+        in: "path"
+        description: "a valid feed key"
+        required: true
+        type: "string"
+        x-exportParamName: "FeedKey"
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Id"
+      - in: "body"
+        name: "datum"
+        description: "Data record including a `value` field (required) and optionally\
+          \ including: `lat`, `lon`, `ele` (latitude, longitude, and elevation values),\
+          \ and `created_at` (a date/time string)."
+        required: true
+        schema:
+          $ref: "#/definitions/datum"
+        x-exportParamName: "Datum"
+      responses:
+        "200":
+          description: "Updated Data"
+          schema:
+            $ref: "#/definitions/DataResponse"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Data"
+      x-swagger-router-action: "update"
+  /{username}/groups:
+    get:
+      tags:
+      - "Groups"
+      summary: "All groups for current user"
+      description: "The Groups endpoint returns information about the user's groups.\
+        \ The response includes the latest value of each feed in the group, and other\
+        \ metadata about the group.\n"
+      operationId: "allGroups"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      responses:
+        "200":
+          description: "An array of groups"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Group"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Groups"
+      x-swagger-router-action: "all"
+    post:
+      tags:
+      - "Groups"
+      summary: "Create a new Group"
+      description: ""
+      operationId: "createGroup"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - in: "body"
+        name: "group"
+        required: true
+        schema:
+          $ref: "#/definitions/group"
+        x-examples:
+          application/json: "{\"name\":\"Some Group\", \"description\":\"A collection\
+            \ of feeds\"}"
+          default: "{\"name\":\"Some Group\",\"description\":\"A collection of feeds\"\
+            }"
+        x-exportParamName: "Group"
+      responses:
+        "200":
+          description: "New Group"
+          schema:
+            $ref: "#/definitions/Group"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Groups"
+      x-swagger-router-action: "create"
+  /{username}/groups/{group_key}:
+    get:
+      tags:
+      - "Groups"
+      summary: "Returns Group based on ID"
+      operationId: "getGroup"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "group_key"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "GroupKey"
+      responses:
+        "200":
+          description: "Group response"
+          schema:
+            $ref: "#/definitions/Group"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error\""
+      x-swagger-router-controller: "Groups"
+      x-swagger-router-action: "get"
+    put:
+      tags:
+      - "Groups"
+      summary: "Replace an existing Group"
+      description: ""
+      operationId: "replaceGroup"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "group_key"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "GroupKey"
+      - in: "body"
+        name: "group"
+        required: true
+        schema:
+          $ref: "#/definitions/group"
+        x-examples:
+          application/json: "{\"name\":\"Some Group\", \"description\":\"A collection\
+            \ of feeds\"}"
+          default: "{\"name\":\"Some Group\",\"description\":\"A collection of feeds\"\
+            }"
+        x-exportParamName: "Group"
+      responses:
+        "200":
+          description: "Updated group"
+          schema:
+            $ref: "#/definitions/Group"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Groups"
+      x-swagger-router-action: "replace"
+    delete:
+      tags:
+      - "Groups"
+      summary: "Delete an existing Group"
+      description: ""
+      operationId: "destroyGroup"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "group_key"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "GroupKey"
+      responses:
+        "200":
+          description: "Deleted Group successfully"
+          schema:
+            type: "string"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Groups"
+      x-swagger-router-action: "destroy"
+    patch:
+      tags:
+      - "Groups"
+      summary: "Update properties of an existing Group"
+      description: ""
+      operationId: "updateGroup"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "group_key"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "GroupKey"
+      - in: "body"
+        name: "group"
+        required: true
+        schema:
+          $ref: "#/definitions/group"
+        x-examples:
+          application/json: "{\"name\":\"Some Group\", \"description\":\"A collection\
+            \ of feeds\"}"
+          default: "{\"name\":\"Some Group\",\"description\":\"A collection of feeds\"\
+            }"
+        x-exportParamName: "Group"
+      responses:
+        "200":
+          description: "Updated Group"
+          schema:
+            $ref: "#/definitions/Group"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Groups"
+      x-swagger-router-action: "update"
+  /{username}/groups/{group_key}/add:
+    post:
+      tags:
+      - "Groups"
+      - "Feeds"
+      summary: "Add an existing Feed to a Group"
+      description: ""
+      operationId: "addFeedToGroup"
+      parameters:
+      - name: "group_key"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "GroupKey"
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "feed_key"
+        in: "query"
+        required: false
+        type: "string"
+        x-exportParamName: "FeedKey"
+        x-optionalDataType: "String"
+      responses:
+        "200":
+          description: "Updated group"
+          schema:
+            $ref: "#/definitions/Group"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Groups"
+      x-swagger-router-action: "add_feed"
+  /{username}/groups/{group_key}/remove:
+    post:
+      tags:
+      - "Groups"
+      - "Feeds"
+      summary: "Remove a Feed from a Group"
+      description: ""
+      operationId: "removeFeedFromGroup"
+      parameters:
+      - name: "group_key"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "GroupKey"
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "feed_key"
+        in: "query"
+        required: false
+        type: "string"
+        x-exportParamName: "FeedKey"
+        x-optionalDataType: "String"
+      responses:
+        "200":
+          description: "Updated group"
+          schema:
+            $ref: "#/definitions/Group"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Groups"
+      x-swagger-router-action: "remove_feed"
+  /{username}/groups/{group_key}/feeds:
+    get:
+      tags:
+      - "Groups"
+      - "Feeds"
+      summary: "All feeds for current user in a given group"
+      description: "The Group Feeds endpoint returns information about the user's\
+        \ feeds. The response includes the latest value of each feed, and other metadata\
+        \ about each feed, but only for feeds within the given group."
+      operationId: "allGroupFeeds"
+      parameters:
+      - name: "group_key"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "GroupKey"
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      responses:
+        "200":
+          description: "An array of feeds"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Feed"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "GroupFeeds"
+      x-swagger-router-action: "group_all"
+    post:
+      tags:
+      - "Feeds"
+      summary: "Create a new Feed in a Group"
+      description: ""
+      operationId: "createGroupFeed"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "group_key"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "GroupKey"
+      - in: "body"
+        name: "feed"
+        required: true
+        schema:
+          $ref: "#/definitions/feed"
+        x-exportParamName: "Feed"
+      responses:
+        "200":
+          description: "New feed"
+          schema:
+            $ref: "#/definitions/Feed"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "GroupFeeds"
+      x-swagger-router-action: "group_create"
+  /{username}/groups/{group_key}/data:
+    post:
+      tags:
+      - "Data"
+      summary: "Create new data for multiple feeds in a group"
+      operationId: "createGroupData"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "group_key"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "GroupKey"
+      - in: "body"
+        name: "group_feed_data"
+        required: true
+        schema:
+          $ref: "#/definitions/group_feed_data"
+        x-exportParamName: "GroupFeedData"
+      responses:
+        "200":
+          description: "New data"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/DataResponse"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Data"
+      x-swagger-router-action: "group_create"
+  /{username}/groups/{group_key}/feeds/{feed_key}/data:
+    get:
+      tags:
+      - "Data"
+      summary: "All data for current feed in a specific group"
+      description: ""
+      operationId: "allGroupFeedData"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "group_key"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "GroupKey"
+      - name: "feed_key"
+        in: "path"
+        description: "a valid feed key"
+        required: true
+        type: "string"
+        x-exportParamName: "FeedKey"
+      - name: "start_time"
+        in: "query"
+        description: "Start time for filtering data. Returns data created after given\
+          \ time."
+        required: false
+        type: "string"
+        format: "date-time"
+        x-exportParamName: "StartTime"
+        x-optionalDataType: "Time"
+      - name: "end_time"
+        in: "query"
+        description: "End time for filtering data. Returns data created before give\
+          \ time."
+        required: false
+        type: "string"
+        format: "date-time"
+        x-exportParamName: "EndTime"
+        x-optionalDataType: "Time"
+      - name: "limit"
+        in: "query"
+        description: "Limit the number of records returned."
+        required: false
+        type: "integer"
+        x-exportParamName: "Limit"
+        x-optionalDataType: "Int32"
+      responses:
+        "200":
+          description: "An array of data"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/DataResponse"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Data"
+      x-swagger-router-action: "group_all"
+    post:
+      tags:
+      - "Data"
+      summary: "Create new Data in a feed belonging to a particular group"
+      operationId: "createGroupFeedData"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "group_key"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "GroupKey"
+      - name: "feed_key"
+        in: "path"
+        description: "a valid feed key"
+        required: true
+        type: "string"
+        x-exportParamName: "FeedKey"
+      - in: "body"
+        name: "datum"
+        description: "Data record including a `value` field (required) and optionally\
+          \ including: `lat`, `lon`, `ele` (latitude, longitude, and elevation values),\
+          \ and `created_at` (a date/time string)."
+        required: true
+        schema:
+          $ref: "#/definitions/datum"
+        x-exportParamName: "Datum"
+      responses:
+        "200":
+          description: "New data"
+          schema:
+            $ref: "#/definitions/DataResponse"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Data"
+      x-swagger-router-action: "group_feed_create"
+  /{username}/groups/{group_key}/feeds/{feed_key}/data/batch:
+    post:
+      tags:
+      - "Data"
+      summary: "Create multiple new Data records in a feed belonging to a particular\
+        \ group"
+      operationId: "batchCreateGroupFeedData"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "group_key"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "GroupKey"
+      - name: "feed_key"
+        in: "path"
+        description: "a valid feed key"
+        required: true
+        type: "string"
+        x-exportParamName: "FeedKey"
+      - in: "body"
+        name: "data"
+        description: "A collection of data records including `value` (required) and\
+          \ optionally including: `lat`, `lon`, `ele` (latitude, longitude, and elevation\
+          \ values), and `created_at` (a date/time string)."
+        required: true
+        schema:
+          type: "array"
+          items:
+            $ref: "#/definitions/datum"
+        x-exportParamName: "Data"
+      responses:
+        "200":
+          description: "New data"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/DataResponse"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Data"
+      x-swagger-router-action: "group_feed_batch"
+  /{username}/dashboards:
+    get:
+      tags:
+      - "Dashboards"
+      summary: "All dashboards for current user"
+      description: "The Dashboards endpoint returns information about the user's dashboards.\n"
+      operationId: "allDashboards"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      responses:
+        "200":
+          description: "An array of dashboards"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Dashboard"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Dashboards"
+      x-swagger-router-action: "all"
+    post:
+      tags:
+      - "Dashboards"
+      summary: "Create a new Dashboard"
+      description: ""
+      operationId: "createDashboard"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - in: "body"
+        name: "dashboard"
+        required: true
+        schema:
+          $ref: "#/definitions/dashboard"
+        x-exportParamName: "Dashboard"
+      responses:
+        "200":
+          description: "New Dashboard"
+          schema:
+            $ref: "#/definitions/Dashboard"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Dashboards"
+      x-swagger-router-action: "create"
+  /{username}/dashboards/{id}:
+    get:
+      tags:
+      - "Dashboards"
+      summary: "Returns Dashboard based on ID"
+      description: ""
+      operationId: "getDashboard"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Id"
+      responses:
+        "200":
+          description: "Dashboard response"
+          schema:
+            $ref: "#/definitions/Dashboard"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error\""
+      x-swagger-router-controller: "Dashboards"
+      x-swagger-router-action: "get"
+    put:
+      tags:
+      - "Dashboards"
+      summary: "Replace an existing Dashboard"
+      description: ""
+      operationId: "replaceDashboard"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Id"
+      - in: "body"
+        name: "dashboard"
+        required: true
+        schema:
+          $ref: "#/definitions/dashboard"
+        x-exportParamName: "Dashboard"
+      responses:
+        "200":
+          description: "Updated dashboard"
+          schema:
+            $ref: "#/definitions/Dashboard"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Dashboards"
+      x-swagger-router-action: "replace"
+    delete:
+      tags:
+      - "Dashboards"
+      summary: "Delete an existing Dashboard"
+      description: ""
+      operationId: "destroyDashboard"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Id"
+      responses:
+        "200":
+          description: "Deleted Dashboard successfully"
+          schema:
+            type: "string"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Dashboards"
+      x-swagger-router-action: "destroy"
+    patch:
+      tags:
+      - "Dashboards"
+      summary: "Update properties of an existing Dashboard"
+      description: ""
+      operationId: "updateDashboard"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Id"
+      - in: "body"
+        name: "dashboard"
+        required: true
+        schema:
+          $ref: "#/definitions/dashboard"
+        x-exportParamName: "Dashboard"
+      responses:
+        "200":
+          description: "Updated Dashboard"
+          schema:
+            $ref: "#/definitions/Dashboard"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Dashboards"
+      x-swagger-router-action: "update"
+  /{username}/dashboards/{dashboard_id}/blocks:
+    get:
+      tags:
+      - "Blocks"
+      summary: "All blocks for current user"
+      description: "The Blocks endpoint returns information about the user's blocks.\n"
+      operationId: "allBlocks"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "dashboard_id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "DashboardId"
+      responses:
+        "200":
+          description: "An array of blocks"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Block"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Blocks"
+      x-swagger-router-action: "all"
+    post:
+      tags:
+      - "Blocks"
+      summary: "Create a new Block"
+      description: ""
+      operationId: "createBlock"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - in: "body"
+        name: "block"
+        required: true
+        schema:
+          $ref: "#/definitions/block"
+        x-exportParamName: "Block"
+      - name: "dashboard_id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "DashboardId"
+      responses:
+        "200":
+          description: "New Block"
+          schema:
+            $ref: "#/definitions/Block"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Blocks"
+      x-swagger-router-action: "create"
+  /{username}/dashboards/{dashboard_id}/blocks/{id}:
+    get:
+      tags:
+      - "Blocks"
+      summary: "Returns Block based on ID"
+      description: ""
+      operationId: "getBlock"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "dashboard_id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "DashboardId"
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Id"
+      responses:
+        "200":
+          description: "Block response"
+          schema:
+            $ref: "#/definitions/Block"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error\""
+      x-swagger-router-controller: "Blocks"
+      x-swagger-router-action: "get"
+    put:
+      tags:
+      - "Blocks"
+      summary: "Replace an existing Block"
+      description: ""
+      operationId: "replaceBlock"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "dashboard_id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "DashboardId"
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Id"
+      - in: "body"
+        name: "block"
+        required: true
+        schema:
+          $ref: "#/definitions/block"
+        x-exportParamName: "Block"
+      responses:
+        "200":
+          description: "Updated block"
+          schema:
+            $ref: "#/definitions/Block"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Blocks"
+      x-swagger-router-action: "replace"
+    delete:
+      tags:
+      - "Blocks"
+      summary: "Delete an existing Block"
+      description: ""
+      operationId: "destroyBlock"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "dashboard_id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "DashboardId"
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Id"
+      responses:
+        "200":
+          description: "Deleted Block successfully"
+          schema:
+            type: "string"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Blocks"
+      x-swagger-router-action: "destroy"
+    patch:
+      tags:
+      - "Blocks"
+      summary: "Update properties of an existing Block"
+      description: ""
+      operationId: "updateBlock"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "dashboard_id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "DashboardId"
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Id"
+      - in: "body"
+        name: "block"
+        required: true
+        schema:
+          $ref: "#/definitions/block"
+        x-exportParamName: "Block"
+      responses:
+        "200":
+          description: "Updated Block"
+          schema:
+            $ref: "#/definitions/Block"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Blocks"
+      x-swagger-router-action: "update"
+  /{username}/tokens:
+    get:
+      tags:
+      - "Tokens"
+      summary: "All tokens for current user"
+      description: "The Tokens endpoint returns information about the user's tokens.\n"
+      operationId: "allTokens"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      responses:
+        "200":
+          description: "An array of tokens"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Token"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Tokens"
+      x-swagger-router-action: "all"
+    post:
+      tags:
+      - "Tokens"
+      summary: "Create a new Token"
+      description: ""
+      operationId: "createToken"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - in: "body"
+        name: "token"
+        required: true
+        schema:
+          $ref: "#/definitions/token"
+        x-exportParamName: "Token"
+      responses:
+        "200":
+          description: "New Token"
+          schema:
+            $ref: "#/definitions/Token"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Tokens"
+      x-swagger-router-action: "create"
+  /{username}/tokens/{id}:
+    get:
+      tags:
+      - "Tokens"
+      summary: "Returns Token based on ID"
+      description: ""
+      operationId: "getToken"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Id"
+      responses:
+        "200":
+          description: "Token response"
+          schema:
+            $ref: "#/definitions/Token"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error\""
+      x-swagger-router-controller: "Tokens"
+      x-swagger-router-action: "get"
+    put:
+      tags:
+      - "Tokens"
+      summary: "Replace an existing Token"
+      description: ""
+      operationId: "replaceToken"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Id"
+      - in: "body"
+        name: "token"
+        required: true
+        schema:
+          $ref: "#/definitions/token"
+        x-exportParamName: "Token"
+      responses:
+        "200":
+          description: "Updated token"
+          schema:
+            $ref: "#/definitions/Token"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Tokens"
+      x-swagger-router-action: "replace"
+    delete:
+      tags:
+      - "Tokens"
+      summary: "Delete an existing Token"
+      description: ""
+      operationId: "destroyToken"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Id"
+      responses:
+        "200":
+          description: "Deleted Token successfully"
+          schema:
+            type: "string"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Tokens"
+      x-swagger-router-action: "destroy"
+    patch:
+      tags:
+      - "Tokens"
+      summary: "Update properties of an existing Token"
+      description: ""
+      operationId: "updateToken"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Id"
+      - in: "body"
+        name: "token"
+        required: true
+        schema:
+          $ref: "#/definitions/token"
+        x-exportParamName: "Token"
+      responses:
+        "200":
+          description: "Updated Token"
+          schema:
+            $ref: "#/definitions/Token"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Tokens"
+      x-swagger-router-action: "update"
+  /{username}/triggers:
+    get:
+      tags:
+      - "Triggers"
+      summary: "All triggers for current user"
+      description: "The Triggers endpoint returns information about the user's triggers.\n"
+      operationId: "allTriggers"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      responses:
+        "200":
+          description: "An array of triggers"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Trigger"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Triggers"
+      x-swagger-router-action: "all"
+    post:
+      tags:
+      - "Triggers"
+      summary: "Create a new Trigger"
+      description: ""
+      operationId: "createTrigger"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - in: "body"
+        name: "trigger"
+        required: true
+        schema:
+          $ref: "#/definitions/trigger"
+        x-exportParamName: "Trigger"
+      responses:
+        "200":
+          description: "New Trigger"
+          schema:
+            $ref: "#/definitions/Trigger"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Triggers"
+      x-swagger-router-action: "create"
+  /{username}/triggers/{id}:
+    get:
+      tags:
+      - "Triggers"
+      summary: "Returns Trigger based on ID"
+      description: ""
+      operationId: "getTrigger"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Id"
+      responses:
+        "200":
+          description: "Trigger response"
+          schema:
+            $ref: "#/definitions/Trigger"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error\""
+      x-swagger-router-controller: "Triggers"
+      x-swagger-router-action: "get"
+    put:
+      tags:
+      - "Triggers"
+      summary: "Replace an existing Trigger"
+      description: ""
+      operationId: "replaceTrigger"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Id"
+      - in: "body"
+        name: "trigger"
+        required: true
+        schema:
+          $ref: "#/definitions/trigger"
+        x-exportParamName: "Trigger"
+      responses:
+        "200":
+          description: "Updated trigger"
+          schema:
+            $ref: "#/definitions/Trigger"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Triggers"
+      x-swagger-router-action: "replace"
+    delete:
+      tags:
+      - "Triggers"
+      summary: "Delete an existing Trigger"
+      description: ""
+      operationId: "destroyTrigger"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Id"
+      responses:
+        "200":
+          description: "Deleted Trigger successfully"
+          schema:
+            type: "string"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Triggers"
+      x-swagger-router-action: "destroy"
+    patch:
+      tags:
+      - "Triggers"
+      summary: "Update properties of an existing Trigger"
+      description: ""
+      operationId: "updateTrigger"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Id"
+      - in: "body"
+        name: "trigger"
+        required: true
+        schema:
+          $ref: "#/definitions/trigger"
+        x-exportParamName: "Trigger"
+      responses:
+        "200":
+          description: "Updated Trigger"
+          schema:
+            $ref: "#/definitions/Trigger"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Triggers"
+      x-swagger-router-action: "update"
+  /{username}/{type}/{type_id}/acl:
+    get:
+      tags:
+      - "Permissions"
+      summary: "All permissions for current user and type"
+      description: "The Permissions endpoint returns information about the user's\
+        \ permissions.\n"
+      operationId: "allPermissions"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "type"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Type_"
+      - name: "type_id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "TypeId"
+      responses:
+        "200":
+          description: "An array of permissions"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Permission"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Permissions"
+      x-swagger-router-action: "all"
+    post:
+      tags:
+      - "Permissions"
+      summary: "Create a new Permission"
+      description: ""
+      operationId: "createPermission"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "type"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Type_"
+      - name: "type_id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "TypeId"
+      - in: "body"
+        name: "permission"
+        required: true
+        schema:
+          $ref: "#/definitions/permission"
+        x-exportParamName: "Permission"
+      responses:
+        "200":
+          description: "New Permission"
+          schema:
+            $ref: "#/definitions/Permission"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Permissions"
+      x-swagger-router-action: "create"
+  /{username}/{type}/{type_id}/acl/{id}:
+    get:
+      tags:
+      - "Permissions"
+      summary: "Returns Permission based on ID"
+      description: ""
+      operationId: "getPermission"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "type"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Type_"
+      - name: "type_id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "TypeId"
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Id"
+      responses:
+        "200":
+          description: "Permission response"
+          schema:
+            $ref: "#/definitions/Permission"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error\""
+      x-swagger-router-controller: "Permissions"
+      x-swagger-router-action: "get"
+    put:
+      tags:
+      - "Permissions"
+      summary: "Replace an existing Permission"
+      description: ""
+      operationId: "replacePermission"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "type"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Type_"
+      - name: "type_id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "TypeId"
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Id"
+      - in: "body"
+        name: "permission"
+        required: true
+        schema:
+          $ref: "#/definitions/permission"
+        x-exportParamName: "Permission"
+      responses:
+        "200":
+          description: "Updated permission"
+          schema:
+            $ref: "#/definitions/Permission"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Permissions"
+      x-swagger-router-action: "replace"
+    delete:
+      tags:
+      - "Permissions"
+      summary: "Delete an existing Permission"
+      description: ""
+      operationId: "destroyPermission"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "type"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Type_"
+      - name: "type_id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "TypeId"
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Id"
+      responses:
+        "200":
+          description: "Deleted Permission successfully"
+          schema:
+            type: "string"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Permissions"
+      x-swagger-router-action: "destroy"
+    patch:
+      tags:
+      - "Permissions"
+      summary: "Update properties of an existing Permission"
+      description: ""
+      operationId: "updatePermission"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "username"
+        in: "path"
+        description: "a valid username string"
+        required: true
+        type: "string"
+        x-exportParamName: "Username"
+      - name: "type"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Type_"
+      - name: "type_id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "TypeId"
+      - name: "id"
+        in: "path"
+        required: true
+        type: "string"
+        x-exportParamName: "Id"
+      - in: "body"
+        name: "permission"
+        required: true
+        schema:
+          $ref: "#/definitions/permission"
+        x-exportParamName: "Permission"
+      responses:
+        "200":
+          description: "Updated Permission"
+          schema:
+            $ref: "#/definitions/Permission"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "Permissions"
+      x-swagger-router-action: "update"
+  /webhooks/feed/:token:
+    post:
+      tags:
+      - "Webhooks"
+      - "Data"
+      summary: "Send data to a feed via webhook URL."
+      description: ""
+      operationId: "createWebhookFeedData"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - in: "body"
+        name: "payload"
+        description: "Webhook payload containing data `value` parameter."
+        required: true
+        schema:
+          $ref: "#/definitions/payload"
+        x-exportParamName: "Payload"
+      responses:
+        "200":
+          description: "New feed data record"
+          schema:
+            $ref: "#/definitions/Data"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "WebhookReceivers"
+      x-swagger-router-action: "create"
+      x-code-samples:
+      - lang: "curl"
+        source: "curl -F 'value=65.5' https://io.adafruit.com/api/v2/webhooks/feed/12345thistoken"
+  /webhooks/feed/:token/raw:
+    post:
+      tags:
+      - "Webhooks"
+      - "Data"
+      summary: "Send arbitrary data to a feed via webhook URL."
+      description: "The raw data webhook receiver accepts POST requests and stores\
+        \ the raw request body on your feed. This is useful when you don't have control\
+        \ of the webhook sender. If feed history is turned on, payloads will be truncated\
+        \ at 1024 bytes. If feed history is turned off, payloads will be truncated\
+        \ at 100KB."
+      operationId: "createRawWebhookFeedData"
+      consumes:
+      - "application/json"
+      - "application/x-www-form-urlencoded"
+      parameters: []
+      responses:
+        "200":
+          description: "New feed data record"
+          schema:
+            $ref: "#/definitions/Data"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"
+        "404":
+          description: "Not Found"
+        "500":
+          description: "Server Error"
+      x-swagger-router-controller: "WebhookReceivers"
+      x-swagger-router-action: "createRaw"
+      x-code-samples:
+      - lang: "curl"
+        source: "curl --header 'Content-Type: application/json' \\\n  --request POST\
+          \ \\\n  --data '{\"some json\": \"goes here\", \"id\": 12345}' \\\n  https://io.adafruit.com/api/v2/webhooks/feed/12345thistoken/raw"
+securityDefinitions:
+  HeaderKey:
+    description: "The AIO Key is used to restrict or grant access to your data. The\
+      \ key is unique, and you can generate a key per feed, and control it in many\
+      \ different ways. The easiest process is to just use your automatically generated\
+      \ master key. You can access this key right from the right-hand side of your\
+      \ dashboard or from an individual feed page."
+    type: "apiKey"
+    name: "X-AIO-Key"
+    in: "header"
+  QueryKey:
+    description: "The AIO Key is used to restrict or grant access to your data. The\
+      \ key is unique, and you can generate a key per feed, and control it in many\
+      \ different ways. The easiest process is to just use your automatically generated\
+      \ master key. You can access this key right from the right-hand side of your\
+      \ dashboard or from an individual feed page."
+    type: "apiKey"
+    name: "X-AIO-Key"
+    in: "query"
+  HeaderSignature:
+    description: "The AIO Signature is an AWS inspired request signature."
+    type: "apiKey"
+    name: "X-AIO-Signature"
+    in: "header"
+definitions:
+  Error:
+    type: "object"
+    properties:
+      code:
+        type: "string"
+      message:
+        type: "string"
+  Activity:
+    type: "object"
+    properties:
+      id:
+        type: "number"
+        readOnly: true
+      action:
+        type: "string"
+        readOnly: true
+      model:
+        type: "string"
+        readOnly: true
+      data:
+        type: "object"
+        readOnly: true
+        properties: {}
+      user_id:
+        type: "number"
+        readOnly: true
+      created_at:
+        type: "string"
+        format: "dateTime"
+        readOnly: true
+      updated_at:
+        type: "string"
+        format: "dateTime"
+        readOnly: true
+    example:
+      data: "{}"
+      updated_at: "updated_at"
+      user_id: 6.02745618307040320615897144307382404804229736328125
+      action: "action"
+      created_at: "created_at"
+      model: "model"
+      id: 0.80082819046101150206595775671303272247314453125
+  User:
+    type: "object"
+    properties:
+      id:
+        type: "number"
+        readOnly: true
+      name:
+        type: "string"
+        readOnly: true
+      color:
+        type: "string"
+        readOnly: true
+      username:
+        type: "string"
+        readOnly: true
+      time_zone:
+        type: "string"
+        readOnly: true
+      created_at:
+        type: "string"
+        format: "dateTime"
+        readOnly: true
+      updated_at:
+        type: "string"
+        format: "dateTime"
+        readOnly: true
+    example:
+      color: "color"
+      updated_at: "updated_at"
+      name: "name"
+      created_at: "created_at"
+      id: 0.80082819046101150206595775671303272247314453125
+      time_zone: "time_zone"
+      username: "username"
+  Group:
+    type: "object"
+    properties:
+      id:
+        type: "number"
+        readOnly: true
+      name:
+        type: "string"
+      description:
+        type: "string"
+      feeds:
+        type: "array"
+        readOnly: true
+        items:
+          $ref: "#/definitions/Feed"
+      created_at:
+        type: "string"
+        readOnly: true
+      updated_at:
+        type: "string"
+        readOnly: true
+    example:
+      updated_at: "updated_at"
+      name: "name"
+      description: "description"
+      feeds:
+      - unit_symbol: "unit_symbol"
+        visibility: "private"
+        last_value: "last_value"
+        groups:
+        - updated_at: "updated_at"
+          name: "name"
+          description: "description"
+          created_at: "created_at"
+          id: 6.02745618307040320615897144307382404804229736328125
+        - updated_at: "updated_at"
+          name: "name"
+          description: "description"
+          created_at: "created_at"
+          id: 6.02745618307040320615897144307382404804229736328125
+        description: "description"
+        created_at: "created_at"
+        status_timeout: 2
+        history: true
+        unit_type: "unit_type"
+        enabled: true
+        license: "license"
+        updated_at: "updated_at"
+        name: "name"
+        status_notify: true
+        details:
+          shared_with:
+          - "{}"
+          - "{}"
+          data:
+            last:
+              key:
+                completed_at: "completed_at"
+                updated_at: "updated_at"
+                group_id: 5.962133916683182377482808078639209270477294921875
+                created_at: "created_at"
+                expiration: "expiration"
+                lon: 2.3021358869347654518833223846741020679473876953125
+                id: "id"
+                value: "value"
+                lat: 5.63737665663332876420099637471139430999755859375
+                feed_id: 1.46581298050294517310021547018550336360931396484375
+                ele: 7.061401241503109105224211816675961017608642578125
+                created_epoch: 9.301444243932575517419536481611430644989013671875
+            count: 3
+            first:
+              key:
+                completed_at: "completed_at"
+                updated_at: "updated_at"
+                group_id: 5.962133916683182377482808078639209270477294921875
+                created_at: "created_at"
+                expiration: "expiration"
+                lon: 2.3021358869347654518833223846741020679473876953125
+                id: "id"
+                value: "value"
+                lat: 5.63737665663332876420099637471139430999755859375
+                feed_id: 1.46581298050294517310021547018550336360931396484375
+                ele: 7.061401241503109105224211816675961017608642578125
+                created_epoch: 9.301444243932575517419536481611430644989013671875
+        id: 0.80082819046101150206595775671303272247314453125
+        key: "key"
+        group:
+          key:
+            updated_at: "updated_at"
+            name: "name"
+            description: "description"
+            created_at: "created_at"
+            id: 6.02745618307040320615897144307382404804229736328125
+        status: "status"
+      - unit_symbol: "unit_symbol"
+        visibility: "private"
+        last_value: "last_value"
+        groups:
+        - updated_at: "updated_at"
+          name: "name"
+          description: "description"
+          created_at: "created_at"
+          id: 6.02745618307040320615897144307382404804229736328125
+        - updated_at: "updated_at"
+          name: "name"
+          description: "description"
+          created_at: "created_at"
+          id: 6.02745618307040320615897144307382404804229736328125
+        description: "description"
+        created_at: "created_at"
+        status_timeout: 2
+        history: true
+        unit_type: "unit_type"
+        enabled: true
+        license: "license"
+        updated_at: "updated_at"
+        name: "name"
+        status_notify: true
+        details:
+          shared_with:
+          - "{}"
+          - "{}"
+          data:
+            last:
+              key:
+                completed_at: "completed_at"
+                updated_at: "updated_at"
+                group_id: 5.962133916683182377482808078639209270477294921875
+                created_at: "created_at"
+                expiration: "expiration"
+                lon: 2.3021358869347654518833223846741020679473876953125
+                id: "id"
+                value: "value"
+                lat: 5.63737665663332876420099637471139430999755859375
+                feed_id: 1.46581298050294517310021547018550336360931396484375
+                ele: 7.061401241503109105224211816675961017608642578125
+                created_epoch: 9.301444243932575517419536481611430644989013671875
+            count: 3
+            first:
+              key:
+                completed_at: "completed_at"
+                updated_at: "updated_at"
+                group_id: 5.962133916683182377482808078639209270477294921875
+                created_at: "created_at"
+                expiration: "expiration"
+                lon: 2.3021358869347654518833223846741020679473876953125
+                id: "id"
+                value: "value"
+                lat: 5.63737665663332876420099637471139430999755859375
+                feed_id: 1.46581298050294517310021547018550336360931396484375
+                ele: 7.061401241503109105224211816675961017608642578125
+                created_epoch: 9.301444243932575517419536481611430644989013671875
+        id: 0.80082819046101150206595775671303272247314453125
+        key: "key"
+        group:
+          key:
+            updated_at: "updated_at"
+            name: "name"
+            description: "description"
+            created_at: "created_at"
+            id: 6.02745618307040320615897144307382404804229736328125
+        status: "status"
+      created_at: "created_at"
+      id: 0.80082819046101150206595775671303272247314453125
+  ShallowGroup:
+    type: "object"
+    properties:
+      id:
+        type: "number"
+        readOnly: true
+      name:
+        type: "string"
+      description:
+        type: "string"
+      created_at:
+        type: "string"
+        readOnly: true
+      updated_at:
+        type: "string"
+        readOnly: true
+    example:
+      updated_at: "updated_at"
+      name: "name"
+      description: "description"
+      created_at: "created_at"
+      id: 6.02745618307040320615897144307382404804229736328125
+  Feed:
+    type: "object"
+    properties:
+      id:
+        type: "number"
+        readOnly: true
+      name:
+        type: "string"
+      key:
+        type: "string"
+      group:
+        type: "object"
+        readOnly: true
+        additionalProperties:
+          $ref: "#/definitions/ShallowGroup"
+      groups:
+        type: "array"
+        readOnly: true
+        items:
+          $ref: "#/definitions/ShallowGroup"
+      description:
+        type: "string"
+      details:
+        $ref: "#/definitions/Feed_details"
+      unit_type:
+        type: "string"
+      unit_symbol:
+        type: "string"
+      history:
+        type: "boolean"
+      visibility:
+        type: "string"
+        default: "private"
+        enum:
+        - "private"
+        - "public"
+      license:
+        type: "string"
+      enabled:
+        type: "boolean"
+        readOnly: true
+      last_value:
+        type: "string"
+        readOnly: true
+      status:
+        type: "string"
+        readOnly: true
+      status_notify:
+        type: "boolean"
+        description: "Is status notification active?"
+      status_timeout:
+        type: "integer"
+        description: "Status notification timeout in minutes."
+      created_at:
+        type: "string"
+        readOnly: true
+      updated_at:
+        type: "string"
+        readOnly: true
+    example:
+      unit_symbol: "unit_symbol"
+      visibility: "private"
+      last_value: "last_value"
+      groups:
+      - updated_at: "updated_at"
+        name: "name"
+        description: "description"
+        created_at: "created_at"
+        id: 6.02745618307040320615897144307382404804229736328125
+      - updated_at: "updated_at"
+        name: "name"
+        description: "description"
+        created_at: "created_at"
+        id: 6.02745618307040320615897144307382404804229736328125
+      description: "description"
+      created_at: "created_at"
+      status_timeout: 2
+      history: true
+      unit_type: "unit_type"
+      enabled: true
+      license: "license"
+      updated_at: "updated_at"
+      name: "name"
+      status_notify: true
+      details:
+        shared_with:
+        - "{}"
+        - "{}"
+        data:
+          last:
+            key:
+              completed_at: "completed_at"
+              updated_at: "updated_at"
+              group_id: 5.962133916683182377482808078639209270477294921875
+              created_at: "created_at"
+              expiration: "expiration"
+              lon: 2.3021358869347654518833223846741020679473876953125
+              id: "id"
+              value: "value"
+              lat: 5.63737665663332876420099637471139430999755859375
+              feed_id: 1.46581298050294517310021547018550336360931396484375
+              ele: 7.061401241503109105224211816675961017608642578125
+              created_epoch: 9.301444243932575517419536481611430644989013671875
+          count: 3
+          first:
+            key:
+              completed_at: "completed_at"
+              updated_at: "updated_at"
+              group_id: 5.962133916683182377482808078639209270477294921875
+              created_at: "created_at"
+              expiration: "expiration"
+              lon: 2.3021358869347654518833223846741020679473876953125
+              id: "id"
+              value: "value"
+              lat: 5.63737665663332876420099637471139430999755859375
+              feed_id: 1.46581298050294517310021547018550336360931396484375
+              ele: 7.061401241503109105224211816675961017608642578125
+              created_epoch: 9.301444243932575517419536481611430644989013671875
+      id: 0.80082819046101150206595775671303272247314453125
+      key: "key"
+      group:
+        key:
+          updated_at: "updated_at"
+          name: "name"
+          description: "description"
+          created_at: "created_at"
+          id: 6.02745618307040320615897144307382404804229736328125
+      status: "status"
+  Permission:
+    type: "object"
+    properties:
+      id:
+        type: "number"
+        readOnly: true
+      user_id:
+        type: "number"
+        readOnly: true
+      scope:
+        type: "string"
+        default: "public"
+        enum:
+        - "secret"
+        - "public"
+        - "user"
+        - "organization"
+      scope_value:
+        type: "string"
+      model:
+        type: "string"
+        default: "feed"
+        enum:
+        - "feed"
+        - "group"
+        - "dashboard"
+      object_id:
+        type: "number"
+      created_at:
+        type: "string"
+        readOnly: true
+      updated_at:
+        type: "string"
+        readOnly: true
+    example:
+      updated_at: "updated_at"
+      user_id: 6.02745618307040320615897144307382404804229736328125
+      scope: "public"
+      scope_value: "scope_value"
+      created_at: "created_at"
+      model: "feed"
+      id: 0.80082819046101150206595775671303272247314453125
+      object_id: 1.46581298050294517310021547018550336360931396484375
+  Data:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        readOnly: true
+      value:
+        type: "string"
+      feed_id:
+        type: "number"
+      group_id:
+        type: "number"
+        readOnly: true
+      expiration:
+        type: "string"
+      lat:
+        type: "number"
+      lon:
+        type: "number"
+      ele:
+        type: "number"
+      completed_at:
+        type: "string"
+        readOnly: true
+      created_at:
+        type: "string"
+        readOnly: true
+      updated_at:
+        type: "string"
+        readOnly: true
+      created_epoch:
+        type: "number"
+        readOnly: true
+    example:
+      completed_at: "completed_at"
+      updated_at: "updated_at"
+      group_id: 5.962133916683182377482808078639209270477294921875
+      created_at: "created_at"
+      expiration: "expiration"
+      lon: 2.3021358869347654518833223846741020679473876953125
+      id: "id"
+      value: "value"
+      lat: 5.63737665663332876420099637471139430999755859375
+      feed_id: 1.46581298050294517310021547018550336360931396484375
+      ele: 7.061401241503109105224211816675961017608642578125
+      created_epoch: 9.301444243932575517419536481611430644989013671875
+  DataResponse:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+      value:
+        type: "string"
+      feed_id:
+        type: "number"
+      group_id:
+        type: "number"
+      expiration:
+        type: "string"
+      lat:
+        type: "number"
+      lon:
+        type: "number"
+      ele:
+        type: "number"
+      completed_at:
+        type: "string"
+      created_at:
+        type: "string"
+      updated_at:
+        type: "string"
+      created_epoch:
+        type: "number"
+    example:
+      completed_at: "completed_at"
+      updated_at: "updated_at"
+      group_id: 6.02745618307040320615897144307382404804229736328125
+      created_at: "created_at"
+      expiration: "expiration"
+      lon: 5.962133916683182377482808078639209270477294921875
+      id: "id"
+      value: "value"
+      lat: 1.46581298050294517310021547018550336360931396484375
+      feed_id: 0.80082819046101150206595775671303272247314453125
+      ele: 5.63737665663332876420099637471139430999755859375
+      created_epoch: 2.3021358869347654518833223846741020679473876953125
+  Dashboard:
+    type: "object"
+    properties:
+      name:
+        type: "string"
+      description:
+        type: "string"
+      key:
+        type: "string"
+      blocks:
+        type: "array"
+        readOnly: true
+        items:
+          $ref: "#/definitions/Block"
+    example:
+      blocks:
+      - visual_type: "visual_type"
+        size_y: 5.962133916683182377482808078639209270477294921875
+        size_x: 1.46581298050294517310021547018550336360931396484375
+        name: "name"
+        column: 0.80082819046101150206595775671303272247314453125
+        description: "description"
+        row: 6.02745618307040320615897144307382404804229736328125
+        key: "key"
+        block_feeds:
+        - feed:
+            unit_symbol: "unit_symbol"
+            visibility: "private"
+            last_value: "last_value"
+            groups:
+            - updated_at: "updated_at"
+              name: "name"
+              description: "description"
+              created_at: "created_at"
+              id: 6.02745618307040320615897144307382404804229736328125
+            - updated_at: "updated_at"
+              name: "name"
+              description: "description"
+              created_at: "created_at"
+              id: 6.02745618307040320615897144307382404804229736328125
+            description: "description"
+            created_at: "created_at"
+            status_timeout: 2
+            history: true
+            unit_type: "unit_type"
+            enabled: true
+            license: "license"
+            updated_at: "updated_at"
+            name: "name"
+            status_notify: true
+            details:
+              shared_with:
+              - "{}"
+              - "{}"
+              data:
+                last:
+                  key:
+                    completed_at: "completed_at"
+                    updated_at: "updated_at"
+                    group_id: 5.962133916683182377482808078639209270477294921875
+                    created_at: "created_at"
+                    expiration: "expiration"
+                    lon: 2.3021358869347654518833223846741020679473876953125
+                    id: "id"
+                    value: "value"
+                    lat: 5.63737665663332876420099637471139430999755859375
+                    feed_id: 1.46581298050294517310021547018550336360931396484375
+                    ele: 7.061401241503109105224211816675961017608642578125
+                    created_epoch: 9.301444243932575517419536481611430644989013671875
+                count: 3
+                first:
+                  key:
+                    completed_at: "completed_at"
+                    updated_at: "updated_at"
+                    group_id: 5.962133916683182377482808078639209270477294921875
+                    created_at: "created_at"
+                    expiration: "expiration"
+                    lon: 2.3021358869347654518833223846741020679473876953125
+                    id: "id"
+                    value: "value"
+                    lat: 5.63737665663332876420099637471139430999755859375
+                    feed_id: 1.46581298050294517310021547018550336360931396484375
+                    ele: 7.061401241503109105224211816675961017608642578125
+                    created_epoch: 9.301444243932575517419536481611430644989013671875
+            id: 0.80082819046101150206595775671303272247314453125
+            key: "key"
+            group:
+              key:
+                updated_at: "updated_at"
+                name: "name"
+                description: "description"
+                created_at: "created_at"
+                id: 6.02745618307040320615897144307382404804229736328125
+            status: "status"
+          id: "id"
+          group:
+            updated_at: "updated_at"
+            name: "name"
+            description: "description"
+            feeds:
+            - unit_symbol: "unit_symbol"
+              visibility: "private"
+              last_value: "last_value"
+              groups:
+              - updated_at: "updated_at"
+                name: "name"
+                description: "description"
+                created_at: "created_at"
+                id: 6.02745618307040320615897144307382404804229736328125
+              - updated_at: "updated_at"
+                name: "name"
+                description: "description"
+                created_at: "created_at"
+                id: 6.02745618307040320615897144307382404804229736328125
+              description: "description"
+              created_at: "created_at"
+              status_timeout: 2
+              history: true
+              unit_type: "unit_type"
+              enabled: true
+              license: "license"
+              updated_at: "updated_at"
+              name: "name"
+              status_notify: true
+              details:
+                shared_with:
+                - "{}"
+                - "{}"
+                data:
+                  last:
+                    key:
+                      completed_at: "completed_at"
+                      updated_at: "updated_at"
+                      group_id: 5.962133916683182377482808078639209270477294921875
+                      created_at: "created_at"
+                      expiration: "expiration"
+                      lon: 2.3021358869347654518833223846741020679473876953125
+                      id: "id"
+                      value: "value"
+                      lat: 5.63737665663332876420099637471139430999755859375
+                      feed_id: 1.46581298050294517310021547018550336360931396484375
+                      ele: 7.061401241503109105224211816675961017608642578125
+                      created_epoch: 9.301444243932575517419536481611430644989013671875
+                  count: 3
+                  first:
+                    key:
+                      completed_at: "completed_at"
+                      updated_at: "updated_at"
+                      group_id: 5.962133916683182377482808078639209270477294921875
+                      created_at: "created_at"
+                      expiration: "expiration"
+                      lon: 2.3021358869347654518833223846741020679473876953125
+                      id: "id"
+                      value: "value"
+                      lat: 5.63737665663332876420099637471139430999755859375
+                      feed_id: 1.46581298050294517310021547018550336360931396484375
+                      ele: 7.061401241503109105224211816675961017608642578125
+                      created_epoch: 9.301444243932575517419536481611430644989013671875
+              id: 0.80082819046101150206595775671303272247314453125
+              key: "key"
+              group:
+                key:
+                  updated_at: "updated_at"
+                  name: "name"
+                  description: "description"
+                  created_at: "created_at"
+                  id: 6.02745618307040320615897144307382404804229736328125
+              status: "status"
+            - unit_symbol: "unit_symbol"
+              visibility: "private"
+              last_value: "last_value"
+              groups:
+              - updated_at: "updated_at"
+                name: "name"
+                description: "description"
+                created_at: "created_at"
+                id: 6.02745618307040320615897144307382404804229736328125
+              - updated_at: "updated_at"
+                name: "name"
+                description: "description"
+                created_at: "created_at"
+                id: 6.02745618307040320615897144307382404804229736328125
+              description: "description"
+              created_at: "created_at"
+              status_timeout: 2
+              history: true
+              unit_type: "unit_type"
+              enabled: true
+              license: "license"
+              updated_at: "updated_at"
+              name: "name"
+              status_notify: true
+              details:
+                shared_with:
+                - "{}"
+                - "{}"
+                data:
+                  last:
+                    key:
+                      completed_at: "completed_at"
+                      updated_at: "updated_at"
+                      group_id: 5.962133916683182377482808078639209270477294921875
+                      created_at: "created_at"
+                      expiration: "expiration"
+                      lon: 2.3021358869347654518833223846741020679473876953125
+                      id: "id"
+                      value: "value"
+                      lat: 5.63737665663332876420099637471139430999755859375
+                      feed_id: 1.46581298050294517310021547018550336360931396484375
+                      ele: 7.061401241503109105224211816675961017608642578125
+                      created_epoch: 9.301444243932575517419536481611430644989013671875
+                  count: 3
+                  first:
+                    key:
+                      completed_at: "completed_at"
+                      updated_at: "updated_at"
+                      group_id: 5.962133916683182377482808078639209270477294921875
+                      created_at: "created_at"
+                      expiration: "expiration"
+                      lon: 2.3021358869347654518833223846741020679473876953125
+                      id: "id"
+                      value: "value"
+                      lat: 5.63737665663332876420099637471139430999755859375
+                      feed_id: 1.46581298050294517310021547018550336360931396484375
+                      ele: 7.061401241503109105224211816675961017608642578125
+                      created_epoch: 9.301444243932575517419536481611430644989013671875
+              id: 0.80082819046101150206595775671303272247314453125
+              key: "key"
+              group:
+                key:
+                  updated_at: "updated_at"
+                  name: "name"
+                  description: "description"
+                  created_at: "created_at"
+                  id: 6.02745618307040320615897144307382404804229736328125
+              status: "status"
+            created_at: "created_at"
+            id: 0.80082819046101150206595775671303272247314453125
+        - feed:
+            unit_symbol: "unit_symbol"
+            visibility: "private"
+            last_value: "last_value"
+            groups:
+            - updated_at: "updated_at"
+              name: "name"
+              description: "description"
+              created_at: "created_at"
+              id: 6.02745618307040320615897144307382404804229736328125
+            - updated_at: "updated_at"
+              name: "name"
+              description: "description"
+              created_at: "created_at"
+              id: 6.02745618307040320615897144307382404804229736328125
+            description: "description"
+            created_at: "created_at"
+            status_timeout: 2
+            history: true
+            unit_type: "unit_type"
+            enabled: true
+            license: "license"
+            updated_at: "updated_at"
+            name: "name"
+            status_notify: true
+            details:
+              shared_with:
+              - "{}"
+              - "{}"
+              data:
+                last:
+                  key:
+                    completed_at: "completed_at"
+                    updated_at: "updated_at"
+                    group_id: 5.962133916683182377482808078639209270477294921875
+                    created_at: "created_at"
+                    expiration: "expiration"
+                    lon: 2.3021358869347654518833223846741020679473876953125
+                    id: "id"
+                    value: "value"
+                    lat: 5.63737665663332876420099637471139430999755859375
+                    feed_id: 1.46581298050294517310021547018550336360931396484375
+                    ele: 7.061401241503109105224211816675961017608642578125
+                    created_epoch: 9.301444243932575517419536481611430644989013671875
+                count: 3
+                first:
+                  key:
+                    completed_at: "completed_at"
+                    updated_at: "updated_at"
+                    group_id: 5.962133916683182377482808078639209270477294921875
+                    created_at: "created_at"
+                    expiration: "expiration"
+                    lon: 2.3021358869347654518833223846741020679473876953125
+                    id: "id"
+                    value: "value"
+                    lat: 5.63737665663332876420099637471139430999755859375
+                    feed_id: 1.46581298050294517310021547018550336360931396484375
+                    ele: 7.061401241503109105224211816675961017608642578125
+                    created_epoch: 9.301444243932575517419536481611430644989013671875
+            id: 0.80082819046101150206595775671303272247314453125
+            key: "key"
+            group:
+              key:
+                updated_at: "updated_at"
+                name: "name"
+                description: "description"
+                created_at: "created_at"
+                id: 6.02745618307040320615897144307382404804229736328125
+            status: "status"
+          id: "id"
+          group:
+            updated_at: "updated_at"
+            name: "name"
+            description: "description"
+            feeds:
+            - unit_symbol: "unit_symbol"
+              visibility: "private"
+              last_value: "last_value"
+              groups:
+              - updated_at: "updated_at"
+                name: "name"
+                description: "description"
+                created_at: "created_at"
+                id: 6.02745618307040320615897144307382404804229736328125
+              - updated_at: "updated_at"
+                name: "name"
+                description: "description"
+                created_at: "created_at"
+                id: 6.02745618307040320615897144307382404804229736328125
+              description: "description"
+              created_at: "created_at"
+              status_timeout: 2
+              history: true
+              unit_type: "unit_type"
+              enabled: true
+              license: "license"
+              updated_at: "updated_at"
+              name: "name"
+              status_notify: true
+              details:
+                shared_with:
+                - "{}"
+                - "{}"
+                data:
+                  last:
+                    key:
+                      completed_at: "completed_at"
+                      updated_at: "updated_at"
+                      group_id: 5.962133916683182377482808078639209270477294921875
+                      created_at: "created_at"
+                      expiration: "expiration"
+                      lon: 2.3021358869347654518833223846741020679473876953125
+                      id: "id"
+                      value: "value"
+                      lat: 5.63737665663332876420099637471139430999755859375
+                      feed_id: 1.46581298050294517310021547018550336360931396484375
+                      ele: 7.061401241503109105224211816675961017608642578125
+                      created_epoch: 9.301444243932575517419536481611430644989013671875
+                  count: 3
+                  first:
+                    key:
+                      completed_at: "completed_at"
+                      updated_at: "updated_at"
+                      group_id: 5.962133916683182377482808078639209270477294921875
+                      created_at: "created_at"
+                      expiration: "expiration"
+                      lon: 2.3021358869347654518833223846741020679473876953125
+                      id: "id"
+                      value: "value"
+                      lat: 5.63737665663332876420099637471139430999755859375
+                      feed_id: 1.46581298050294517310021547018550336360931396484375
+                      ele: 7.061401241503109105224211816675961017608642578125
+                      created_epoch: 9.301444243932575517419536481611430644989013671875
+              id: 0.80082819046101150206595775671303272247314453125
+              key: "key"
+              group:
+                key:
+                  updated_at: "updated_at"
+                  name: "name"
+                  description: "description"
+                  created_at: "created_at"
+                  id: 6.02745618307040320615897144307382404804229736328125
+              status: "status"
+            - unit_symbol: "unit_symbol"
+              visibility: "private"
+              last_value: "last_value"
+              groups:
+              - updated_at: "updated_at"
+                name: "name"
+                description: "description"
+                created_at: "created_at"
+                id: 6.02745618307040320615897144307382404804229736328125
+              - updated_at: "updated_at"
+                name: "name"
+                description: "description"
+                created_at: "created_at"
+                id: 6.02745618307040320615897144307382404804229736328125
+              description: "description"
+              created_at: "created_at"
+              status_timeout: 2
+              history: true
+              unit_type: "unit_type"
+              enabled: true
+              license: "license"
+              updated_at: "updated_at"
+              name: "name"
+              status_notify: true
+              details:
+                shared_with:
+                - "{}"
+                - "{}"
+                data:
+                  last:
+                    key:
+                      completed_at: "completed_at"
+                      updated_at: "updated_at"
+                      group_id: 5.962133916683182377482808078639209270477294921875
+                      created_at: "created_at"
+                      expiration: "expiration"
+                      lon: 2.3021358869347654518833223846741020679473876953125
+                      id: "id"
+                      value: "value"
+                      lat: 5.63737665663332876420099637471139430999755859375
+                      feed_id: 1.46581298050294517310021547018550336360931396484375
+                      ele: 7.061401241503109105224211816675961017608642578125
+                      created_epoch: 9.301444243932575517419536481611430644989013671875
+                  count: 3
+                  first:
+                    key:
+                      completed_at: "completed_at"
+                      updated_at: "updated_at"
+                      group_id: 5.962133916683182377482808078639209270477294921875
+                      created_at: "created_at"
+                      expiration: "expiration"
+                      lon: 2.3021358869347654518833223846741020679473876953125
+                      id: "id"
+                      value: "value"
+                      lat: 5.63737665663332876420099637471139430999755859375
+                      feed_id: 1.46581298050294517310021547018550336360931396484375
+                      ele: 7.061401241503109105224211816675961017608642578125
+                      created_epoch: 9.301444243932575517419536481611430644989013671875
+              id: 0.80082819046101150206595775671303272247314453125
+              key: "key"
+              group:
+                key:
+                  updated_at: "updated_at"
+                  name: "name"
+                  description: "description"
+                  created_at: "created_at"
+                  id: 6.02745618307040320615897144307382404804229736328125
+              status: "status"
+            created_at: "created_at"
+            id: 0.80082819046101150206595775671303272247314453125
+      - visual_type: "visual_type"
+        size_y: 5.962133916683182377482808078639209270477294921875
+        size_x: 1.46581298050294517310021547018550336360931396484375
+        name: "name"
+        column: 0.80082819046101150206595775671303272247314453125
+        description: "description"
+        row: 6.02745618307040320615897144307382404804229736328125
+        key: "key"
+        block_feeds:
+        - feed:
+            unit_symbol: "unit_symbol"
+            visibility: "private"
+            last_value: "last_value"
+            groups:
+            - updated_at: "updated_at"
+              name: "name"
+              description: "description"
+              created_at: "created_at"
+              id: 6.02745618307040320615897144307382404804229736328125
+            - updated_at: "updated_at"
+              name: "name"
+              description: "description"
+              created_at: "created_at"
+              id: 6.02745618307040320615897144307382404804229736328125
+            description: "description"
+            created_at: "created_at"
+            status_timeout: 2
+            history: true
+            unit_type: "unit_type"
+            enabled: true
+            license: "license"
+            updated_at: "updated_at"
+            name: "name"
+            status_notify: true
+            details:
+              shared_with:
+              - "{}"
+              - "{}"
+              data:
+                last:
+                  key:
+                    completed_at: "completed_at"
+                    updated_at: "updated_at"
+                    group_id: 5.962133916683182377482808078639209270477294921875
+                    created_at: "created_at"
+                    expiration: "expiration"
+                    lon: 2.3021358869347654518833223846741020679473876953125
+                    id: "id"
+                    value: "value"
+                    lat: 5.63737665663332876420099637471139430999755859375
+                    feed_id: 1.46581298050294517310021547018550336360931396484375
+                    ele: 7.061401241503109105224211816675961017608642578125
+                    created_epoch: 9.301444243932575517419536481611430644989013671875
+                count: 3
+                first:
+                  key:
+                    completed_at: "completed_at"
+                    updated_at: "updated_at"
+                    group_id: 5.962133916683182377482808078639209270477294921875
+                    created_at: "created_at"
+                    expiration: "expiration"
+                    lon: 2.3021358869347654518833223846741020679473876953125
+                    id: "id"
+                    value: "value"
+                    lat: 5.63737665663332876420099637471139430999755859375
+                    feed_id: 1.46581298050294517310021547018550336360931396484375
+                    ele: 7.061401241503109105224211816675961017608642578125
+                    created_epoch: 9.301444243932575517419536481611430644989013671875
+            id: 0.80082819046101150206595775671303272247314453125
+            key: "key"
+            group:
+              key:
+                updated_at: "updated_at"
+                name: "name"
+                description: "description"
+                created_at: "created_at"
+                id: 6.02745618307040320615897144307382404804229736328125
+            status: "status"
+          id: "id"
+          group:
+            updated_at: "updated_at"
+            name: "name"
+            description: "description"
+            feeds:
+            - unit_symbol: "unit_symbol"
+              visibility: "private"
+              last_value: "last_value"
+              groups:
+              - updated_at: "updated_at"
+                name: "name"
+                description: "description"
+                created_at: "created_at"
+                id: 6.02745618307040320615897144307382404804229736328125
+              - updated_at: "updated_at"
+                name: "name"
+                description: "description"
+                created_at: "created_at"
+                id: 6.02745618307040320615897144307382404804229736328125
+              description: "description"
+              created_at: "created_at"
+              status_timeout: 2
+              history: true
+              unit_type: "unit_type"
+              enabled: true
+              license: "license"
+              updated_at: "updated_at"
+              name: "name"
+              status_notify: true
+              details:
+                shared_with:
+                - "{}"
+                - "{}"
+                data:
+                  last:
+                    key:
+                      completed_at: "completed_at"
+                      updated_at: "updated_at"
+                      group_id: 5.962133916683182377482808078639209270477294921875
+                      created_at: "created_at"
+                      expiration: "expiration"
+                      lon: 2.3021358869347654518833223846741020679473876953125
+                      id: "id"
+                      value: "value"
+                      lat: 5.63737665663332876420099637471139430999755859375
+                      feed_id: 1.46581298050294517310021547018550336360931396484375
+                      ele: 7.061401241503109105224211816675961017608642578125
+                      created_epoch: 9.301444243932575517419536481611430644989013671875
+                  count: 3
+                  first:
+                    key:
+                      completed_at: "completed_at"
+                      updated_at: "updated_at"
+                      group_id: 5.962133916683182377482808078639209270477294921875
+                      created_at: "created_at"
+                      expiration: "expiration"
+                      lon: 2.3021358869347654518833223846741020679473876953125
+                      id: "id"
+                      value: "value"
+                      lat: 5.63737665663332876420099637471139430999755859375
+                      feed_id: 1.46581298050294517310021547018550336360931396484375
+                      ele: 7.061401241503109105224211816675961017608642578125
+                      created_epoch: 9.301444243932575517419536481611430644989013671875
+              id: 0.80082819046101150206595775671303272247314453125
+              key: "key"
+              group:
+                key:
+                  updated_at: "updated_at"
+                  name: "name"
+                  description: "description"
+                  created_at: "created_at"
+                  id: 6.02745618307040320615897144307382404804229736328125
+              status: "status"
+            - unit_symbol: "unit_symbol"
+              visibility: "private"
+              last_value: "last_value"
+              groups:
+              - updated_at: "updated_at"
+                name: "name"
+                description: "description"
+                created_at: "created_at"
+                id: 6.02745618307040320615897144307382404804229736328125
+              - updated_at: "updated_at"
+                name: "name"
+                description: "description"
+                created_at: "created_at"
+                id: 6.02745618307040320615897144307382404804229736328125
+              description: "description"
+              created_at: "created_at"
+              status_timeout: 2
+              history: true
+              unit_type: "unit_type"
+              enabled: true
+              license: "license"
+              updated_at: "updated_at"
+              name: "name"
+              status_notify: true
+              details:
+                shared_with:
+                - "{}"
+                - "{}"
+                data:
+                  last:
+                    key:
+                      completed_at: "completed_at"
+                      updated_at: "updated_at"
+                      group_id: 5.962133916683182377482808078639209270477294921875
+                      created_at: "created_at"
+                      expiration: "expiration"
+                      lon: 2.3021358869347654518833223846741020679473876953125
+                      id: "id"
+                      value: "value"
+                      lat: 5.63737665663332876420099637471139430999755859375
+                      feed_id: 1.46581298050294517310021547018550336360931396484375
+                      ele: 7.061401241503109105224211816675961017608642578125
+                      created_epoch: 9.301444243932575517419536481611430644989013671875
+                  count: 3
+                  first:
+                    key:
+                      completed_at: "completed_at"
+                      updated_at: "updated_at"
+                      group_id: 5.962133916683182377482808078639209270477294921875
+                      created_at: "created_at"
+                      expiration: "expiration"
+                      lon: 2.3021358869347654518833223846741020679473876953125
+                      id: "id"
+                      value: "value"
+                      lat: 5.63737665663332876420099637471139430999755859375
+                      feed_id: 1.46581298050294517310021547018550336360931396484375
+                      ele: 7.061401241503109105224211816675961017608642578125
+                      created_epoch: 9.301444243932575517419536481611430644989013671875
+              id: 0.80082819046101150206595775671303272247314453125
+              key: "key"
+              group:
+                key:
+                  updated_at: "updated_at"
+                  name: "name"
+                  description: "description"
+                  created_at: "created_at"
+                  id: 6.02745618307040320615897144307382404804229736328125
+              status: "status"
+            created_at: "created_at"
+            id: 0.80082819046101150206595775671303272247314453125
+        - feed:
+            unit_symbol: "unit_symbol"
+            visibility: "private"
+            last_value: "last_value"
+            groups:
+            - updated_at: "updated_at"
+              name: "name"
+              description: "description"
+              created_at: "created_at"
+              id: 6.02745618307040320615897144307382404804229736328125
+            - updated_at: "updated_at"
+              name: "name"
+              description: "description"
+              created_at: "created_at"
+              id: 6.02745618307040320615897144307382404804229736328125
+            description: "description"
+            created_at: "created_at"
+            status_timeout: 2
+            history: true
+            unit_type: "unit_type"
+            enabled: true
+            license: "license"
+            updated_at: "updated_at"
+            name: "name"
+            status_notify: true
+            details:
+              shared_with:
+              - "{}"
+              - "{}"
+              data:
+                last:
+                  key:
+                    completed_at: "completed_at"
+                    updated_at: "updated_at"
+                    group_id: 5.962133916683182377482808078639209270477294921875
+                    created_at: "created_at"
+                    expiration: "expiration"
+                    lon: 2.3021358869347654518833223846741020679473876953125
+                    id: "id"
+                    value: "value"
+                    lat: 5.63737665663332876420099637471139430999755859375
+                    feed_id: 1.46581298050294517310021547018550336360931396484375
+                    ele: 7.061401241503109105224211816675961017608642578125
+                    created_epoch: 9.301444243932575517419536481611430644989013671875
+                count: 3
+                first:
+                  key:
+                    completed_at: "completed_at"
+                    updated_at: "updated_at"
+                    group_id: 5.962133916683182377482808078639209270477294921875
+                    created_at: "created_at"
+                    expiration: "expiration"
+                    lon: 2.3021358869347654518833223846741020679473876953125
+                    id: "id"
+                    value: "value"
+                    lat: 5.63737665663332876420099637471139430999755859375
+                    feed_id: 1.46581298050294517310021547018550336360931396484375
+                    ele: 7.061401241503109105224211816675961017608642578125
+                    created_epoch: 9.301444243932575517419536481611430644989013671875
+            id: 0.80082819046101150206595775671303272247314453125
+            key: "key"
+            group:
+              key:
+                updated_at: "updated_at"
+                name: "name"
+                description: "description"
+                created_at: "created_at"
+                id: 6.02745618307040320615897144307382404804229736328125
+            status: "status"
+          id: "id"
+          group:
+            updated_at: "updated_at"
+            name: "name"
+            description: "description"
+            feeds:
+            - unit_symbol: "unit_symbol"
+              visibility: "private"
+              last_value: "last_value"
+              groups:
+              - updated_at: "updated_at"
+                name: "name"
+                description: "description"
+                created_at: "created_at"
+                id: 6.02745618307040320615897144307382404804229736328125
+              - updated_at: "updated_at"
+                name: "name"
+                description: "description"
+                created_at: "created_at"
+                id: 6.02745618307040320615897144307382404804229736328125
+              description: "description"
+              created_at: "created_at"
+              status_timeout: 2
+              history: true
+              unit_type: "unit_type"
+              enabled: true
+              license: "license"
+              updated_at: "updated_at"
+              name: "name"
+              status_notify: true
+              details:
+                shared_with:
+                - "{}"
+                - "{}"
+                data:
+                  last:
+                    key:
+                      completed_at: "completed_at"
+                      updated_at: "updated_at"
+                      group_id: 5.962133916683182377482808078639209270477294921875
+                      created_at: "created_at"
+                      expiration: "expiration"
+                      lon: 2.3021358869347654518833223846741020679473876953125
+                      id: "id"
+                      value: "value"
+                      lat: 5.63737665663332876420099637471139430999755859375
+                      feed_id: 1.46581298050294517310021547018550336360931396484375
+                      ele: 7.061401241503109105224211816675961017608642578125
+                      created_epoch: 9.301444243932575517419536481611430644989013671875
+                  count: 3
+                  first:
+                    key:
+                      completed_at: "completed_at"
+                      updated_at: "updated_at"
+                      group_id: 5.962133916683182377482808078639209270477294921875
+                      created_at: "created_at"
+                      expiration: "expiration"
+                      lon: 2.3021358869347654518833223846741020679473876953125
+                      id: "id"
+                      value: "value"
+                      lat: 5.63737665663332876420099637471139430999755859375
+                      feed_id: 1.46581298050294517310021547018550336360931396484375
+                      ele: 7.061401241503109105224211816675961017608642578125
+                      created_epoch: 9.301444243932575517419536481611430644989013671875
+              id: 0.80082819046101150206595775671303272247314453125
+              key: "key"
+              group:
+                key:
+                  updated_at: "updated_at"
+                  name: "name"
+                  description: "description"
+                  created_at: "created_at"
+                  id: 6.02745618307040320615897144307382404804229736328125
+              status: "status"
+            - unit_symbol: "unit_symbol"
+              visibility: "private"
+              last_value: "last_value"
+              groups:
+              - updated_at: "updated_at"
+                name: "name"
+                description: "description"
+                created_at: "created_at"
+                id: 6.02745618307040320615897144307382404804229736328125
+              - updated_at: "updated_at"
+                name: "name"
+                description: "description"
+                created_at: "created_at"
+                id: 6.02745618307040320615897144307382404804229736328125
+              description: "description"
+              created_at: "created_at"
+              status_timeout: 2
+              history: true
+              unit_type: "unit_type"
+              enabled: true
+              license: "license"
+              updated_at: "updated_at"
+              name: "name"
+              status_notify: true
+              details:
+                shared_with:
+                - "{}"
+                - "{}"
+                data:
+                  last:
+                    key:
+                      completed_at: "completed_at"
+                      updated_at: "updated_at"
+                      group_id: 5.962133916683182377482808078639209270477294921875
+                      created_at: "created_at"
+                      expiration: "expiration"
+                      lon: 2.3021358869347654518833223846741020679473876953125
+                      id: "id"
+                      value: "value"
+                      lat: 5.63737665663332876420099637471139430999755859375
+                      feed_id: 1.46581298050294517310021547018550336360931396484375
+                      ele: 7.061401241503109105224211816675961017608642578125
+                      created_epoch: 9.301444243932575517419536481611430644989013671875
+                  count: 3
+                  first:
+                    key:
+                      completed_at: "completed_at"
+                      updated_at: "updated_at"
+                      group_id: 5.962133916683182377482808078639209270477294921875
+                      created_at: "created_at"
+                      expiration: "expiration"
+                      lon: 2.3021358869347654518833223846741020679473876953125
+                      id: "id"
+                      value: "value"
+                      lat: 5.63737665663332876420099637471139430999755859375
+                      feed_id: 1.46581298050294517310021547018550336360931396484375
+                      ele: 7.061401241503109105224211816675961017608642578125
+                      created_epoch: 9.301444243932575517419536481611430644989013671875
+              id: 0.80082819046101150206595775671303272247314453125
+              key: "key"
+              group:
+                key:
+                  updated_at: "updated_at"
+                  name: "name"
+                  description: "description"
+                  created_at: "created_at"
+                  id: 6.02745618307040320615897144307382404804229736328125
+              status: "status"
+            created_at: "created_at"
+            id: 0.80082819046101150206595775671303272247314453125
+      name: "name"
+      description: "description"
+      key: "key"
+  Block:
+    type: "object"
+    properties:
+      name:
+        type: "string"
+      description:
+        type: "string"
+      key:
+        type: "string"
+      visual_type:
+        type: "string"
+      column:
+        type: "number"
+      row:
+        type: "number"
+      size_x:
+        type: "number"
+      size_y:
+        type: "number"
+      block_feeds:
+        type: "array"
+        readOnly: true
+        items:
+          $ref: "#/definitions/BlockFeed"
+    example:
+      visual_type: "visual_type"
+      size_y: 5.962133916683182377482808078639209270477294921875
+      size_x: 1.46581298050294517310021547018550336360931396484375
+      name: "name"
+      column: 0.80082819046101150206595775671303272247314453125
+      description: "description"
+      row: 6.02745618307040320615897144307382404804229736328125
+      key: "key"
+      block_feeds:
+      - feed:
+          unit_symbol: "unit_symbol"
+          visibility: "private"
+          last_value: "last_value"
+          groups:
+          - updated_at: "updated_at"
+            name: "name"
+            description: "description"
+            created_at: "created_at"
+            id: 6.02745618307040320615897144307382404804229736328125
+          - updated_at: "updated_at"
+            name: "name"
+            description: "description"
+            created_at: "created_at"
+            id: 6.02745618307040320615897144307382404804229736328125
+          description: "description"
+          created_at: "created_at"
+          status_timeout: 2
+          history: true
+          unit_type: "unit_type"
+          enabled: true
+          license: "license"
+          updated_at: "updated_at"
+          name: "name"
+          status_notify: true
+          details:
+            shared_with:
+            - "{}"
+            - "{}"
+            data:
+              last:
+                key:
+                  completed_at: "completed_at"
+                  updated_at: "updated_at"
+                  group_id: 5.962133916683182377482808078639209270477294921875
+                  created_at: "created_at"
+                  expiration: "expiration"
+                  lon: 2.3021358869347654518833223846741020679473876953125
+                  id: "id"
+                  value: "value"
+                  lat: 5.63737665663332876420099637471139430999755859375
+                  feed_id: 1.46581298050294517310021547018550336360931396484375
+                  ele: 7.061401241503109105224211816675961017608642578125
+                  created_epoch: 9.301444243932575517419536481611430644989013671875
+              count: 3
+              first:
+                key:
+                  completed_at: "completed_at"
+                  updated_at: "updated_at"
+                  group_id: 5.962133916683182377482808078639209270477294921875
+                  created_at: "created_at"
+                  expiration: "expiration"
+                  lon: 2.3021358869347654518833223846741020679473876953125
+                  id: "id"
+                  value: "value"
+                  lat: 5.63737665663332876420099637471139430999755859375
+                  feed_id: 1.46581298050294517310021547018550336360931396484375
+                  ele: 7.061401241503109105224211816675961017608642578125
+                  created_epoch: 9.301444243932575517419536481611430644989013671875
+          id: 0.80082819046101150206595775671303272247314453125
+          key: "key"
+          group:
+            key:
+              updated_at: "updated_at"
+              name: "name"
+              description: "description"
+              created_at: "created_at"
+              id: 6.02745618307040320615897144307382404804229736328125
+          status: "status"
+        id: "id"
+        group:
+          updated_at: "updated_at"
+          name: "name"
+          description: "description"
+          feeds:
+          - unit_symbol: "unit_symbol"
+            visibility: "private"
+            last_value: "last_value"
+            groups:
+            - updated_at: "updated_at"
+              name: "name"
+              description: "description"
+              created_at: "created_at"
+              id: 6.02745618307040320615897144307382404804229736328125
+            - updated_at: "updated_at"
+              name: "name"
+              description: "description"
+              created_at: "created_at"
+              id: 6.02745618307040320615897144307382404804229736328125
+            description: "description"
+            created_at: "created_at"
+            status_timeout: 2
+            history: true
+            unit_type: "unit_type"
+            enabled: true
+            license: "license"
+            updated_at: "updated_at"
+            name: "name"
+            status_notify: true
+            details:
+              shared_with:
+              - "{}"
+              - "{}"
+              data:
+                last:
+                  key:
+                    completed_at: "completed_at"
+                    updated_at: "updated_at"
+                    group_id: 5.962133916683182377482808078639209270477294921875
+                    created_at: "created_at"
+                    expiration: "expiration"
+                    lon: 2.3021358869347654518833223846741020679473876953125
+                    id: "id"
+                    value: "value"
+                    lat: 5.63737665663332876420099637471139430999755859375
+                    feed_id: 1.46581298050294517310021547018550336360931396484375
+                    ele: 7.061401241503109105224211816675961017608642578125
+                    created_epoch: 9.301444243932575517419536481611430644989013671875
+                count: 3
+                first:
+                  key:
+                    completed_at: "completed_at"
+                    updated_at: "updated_at"
+                    group_id: 5.962133916683182377482808078639209270477294921875
+                    created_at: "created_at"
+                    expiration: "expiration"
+                    lon: 2.3021358869347654518833223846741020679473876953125
+                    id: "id"
+                    value: "value"
+                    lat: 5.63737665663332876420099637471139430999755859375
+                    feed_id: 1.46581298050294517310021547018550336360931396484375
+                    ele: 7.061401241503109105224211816675961017608642578125
+                    created_epoch: 9.301444243932575517419536481611430644989013671875
+            id: 0.80082819046101150206595775671303272247314453125
+            key: "key"
+            group:
+              key:
+                updated_at: "updated_at"
+                name: "name"
+                description: "description"
+                created_at: "created_at"
+                id: 6.02745618307040320615897144307382404804229736328125
+            status: "status"
+          - unit_symbol: "unit_symbol"
+            visibility: "private"
+            last_value: "last_value"
+            groups:
+            - updated_at: "updated_at"
+              name: "name"
+              description: "description"
+              created_at: "created_at"
+              id: 6.02745618307040320615897144307382404804229736328125
+            - updated_at: "updated_at"
+              name: "name"
+              description: "description"
+              created_at: "created_at"
+              id: 6.02745618307040320615897144307382404804229736328125
+            description: "description"
+            created_at: "created_at"
+            status_timeout: 2
+            history: true
+            unit_type: "unit_type"
+            enabled: true
+            license: "license"
+            updated_at: "updated_at"
+            name: "name"
+            status_notify: true
+            details:
+              shared_with:
+              - "{}"
+              - "{}"
+              data:
+                last:
+                  key:
+                    completed_at: "completed_at"
+                    updated_at: "updated_at"
+                    group_id: 5.962133916683182377482808078639209270477294921875
+                    created_at: "created_at"
+                    expiration: "expiration"
+                    lon: 2.3021358869347654518833223846741020679473876953125
+                    id: "id"
+                    value: "value"
+                    lat: 5.63737665663332876420099637471139430999755859375
+                    feed_id: 1.46581298050294517310021547018550336360931396484375
+                    ele: 7.061401241503109105224211816675961017608642578125
+                    created_epoch: 9.301444243932575517419536481611430644989013671875
+                count: 3
+                first:
+                  key:
+                    completed_at: "completed_at"
+                    updated_at: "updated_at"
+                    group_id: 5.962133916683182377482808078639209270477294921875
+                    created_at: "created_at"
+                    expiration: "expiration"
+                    lon: 2.3021358869347654518833223846741020679473876953125
+                    id: "id"
+                    value: "value"
+                    lat: 5.63737665663332876420099637471139430999755859375
+                    feed_id: 1.46581298050294517310021547018550336360931396484375
+                    ele: 7.061401241503109105224211816675961017608642578125
+                    created_epoch: 9.301444243932575517419536481611430644989013671875
+            id: 0.80082819046101150206595775671303272247314453125
+            key: "key"
+            group:
+              key:
+                updated_at: "updated_at"
+                name: "name"
+                description: "description"
+                created_at: "created_at"
+                id: 6.02745618307040320615897144307382404804229736328125
+            status: "status"
+          created_at: "created_at"
+          id: 0.80082819046101150206595775671303272247314453125
+      - feed:
+          unit_symbol: "unit_symbol"
+          visibility: "private"
+          last_value: "last_value"
+          groups:
+          - updated_at: "updated_at"
+            name: "name"
+            description: "description"
+            created_at: "created_at"
+            id: 6.02745618307040320615897144307382404804229736328125
+          - updated_at: "updated_at"
+            name: "name"
+            description: "description"
+            created_at: "created_at"
+            id: 6.02745618307040320615897144307382404804229736328125
+          description: "description"
+          created_at: "created_at"
+          status_timeout: 2
+          history: true
+          unit_type: "unit_type"
+          enabled: true
+          license: "license"
+          updated_at: "updated_at"
+          name: "name"
+          status_notify: true
+          details:
+            shared_with:
+            - "{}"
+            - "{}"
+            data:
+              last:
+                key:
+                  completed_at: "completed_at"
+                  updated_at: "updated_at"
+                  group_id: 5.962133916683182377482808078639209270477294921875
+                  created_at: "created_at"
+                  expiration: "expiration"
+                  lon: 2.3021358869347654518833223846741020679473876953125
+                  id: "id"
+                  value: "value"
+                  lat: 5.63737665663332876420099637471139430999755859375
+                  feed_id: 1.46581298050294517310021547018550336360931396484375
+                  ele: 7.061401241503109105224211816675961017608642578125
+                  created_epoch: 9.301444243932575517419536481611430644989013671875
+              count: 3
+              first:
+                key:
+                  completed_at: "completed_at"
+                  updated_at: "updated_at"
+                  group_id: 5.962133916683182377482808078639209270477294921875
+                  created_at: "created_at"
+                  expiration: "expiration"
+                  lon: 2.3021358869347654518833223846741020679473876953125
+                  id: "id"
+                  value: "value"
+                  lat: 5.63737665663332876420099637471139430999755859375
+                  feed_id: 1.46581298050294517310021547018550336360931396484375
+                  ele: 7.061401241503109105224211816675961017608642578125
+                  created_epoch: 9.301444243932575517419536481611430644989013671875
+          id: 0.80082819046101150206595775671303272247314453125
+          key: "key"
+          group:
+            key:
+              updated_at: "updated_at"
+              name: "name"
+              description: "description"
+              created_at: "created_at"
+              id: 6.02745618307040320615897144307382404804229736328125
+          status: "status"
+        id: "id"
+        group:
+          updated_at: "updated_at"
+          name: "name"
+          description: "description"
+          feeds:
+          - unit_symbol: "unit_symbol"
+            visibility: "private"
+            last_value: "last_value"
+            groups:
+            - updated_at: "updated_at"
+              name: "name"
+              description: "description"
+              created_at: "created_at"
+              id: 6.02745618307040320615897144307382404804229736328125
+            - updated_at: "updated_at"
+              name: "name"
+              description: "description"
+              created_at: "created_at"
+              id: 6.02745618307040320615897144307382404804229736328125
+            description: "description"
+            created_at: "created_at"
+            status_timeout: 2
+            history: true
+            unit_type: "unit_type"
+            enabled: true
+            license: "license"
+            updated_at: "updated_at"
+            name: "name"
+            status_notify: true
+            details:
+              shared_with:
+              - "{}"
+              - "{}"
+              data:
+                last:
+                  key:
+                    completed_at: "completed_at"
+                    updated_at: "updated_at"
+                    group_id: 5.962133916683182377482808078639209270477294921875
+                    created_at: "created_at"
+                    expiration: "expiration"
+                    lon: 2.3021358869347654518833223846741020679473876953125
+                    id: "id"
+                    value: "value"
+                    lat: 5.63737665663332876420099637471139430999755859375
+                    feed_id: 1.46581298050294517310021547018550336360931396484375
+                    ele: 7.061401241503109105224211816675961017608642578125
+                    created_epoch: 9.301444243932575517419536481611430644989013671875
+                count: 3
+                first:
+                  key:
+                    completed_at: "completed_at"
+                    updated_at: "updated_at"
+                    group_id: 5.962133916683182377482808078639209270477294921875
+                    created_at: "created_at"
+                    expiration: "expiration"
+                    lon: 2.3021358869347654518833223846741020679473876953125
+                    id: "id"
+                    value: "value"
+                    lat: 5.63737665663332876420099637471139430999755859375
+                    feed_id: 1.46581298050294517310021547018550336360931396484375
+                    ele: 7.061401241503109105224211816675961017608642578125
+                    created_epoch: 9.301444243932575517419536481611430644989013671875
+            id: 0.80082819046101150206595775671303272247314453125
+            key: "key"
+            group:
+              key:
+                updated_at: "updated_at"
+                name: "name"
+                description: "description"
+                created_at: "created_at"
+                id: 6.02745618307040320615897144307382404804229736328125
+            status: "status"
+          - unit_symbol: "unit_symbol"
+            visibility: "private"
+            last_value: "last_value"
+            groups:
+            - updated_at: "updated_at"
+              name: "name"
+              description: "description"
+              created_at: "created_at"
+              id: 6.02745618307040320615897144307382404804229736328125
+            - updated_at: "updated_at"
+              name: "name"
+              description: "description"
+              created_at: "created_at"
+              id: 6.02745618307040320615897144307382404804229736328125
+            description: "description"
+            created_at: "created_at"
+            status_timeout: 2
+            history: true
+            unit_type: "unit_type"
+            enabled: true
+            license: "license"
+            updated_at: "updated_at"
+            name: "name"
+            status_notify: true
+            details:
+              shared_with:
+              - "{}"
+              - "{}"
+              data:
+                last:
+                  key:
+                    completed_at: "completed_at"
+                    updated_at: "updated_at"
+                    group_id: 5.962133916683182377482808078639209270477294921875
+                    created_at: "created_at"
+                    expiration: "expiration"
+                    lon: 2.3021358869347654518833223846741020679473876953125
+                    id: "id"
+                    value: "value"
+                    lat: 5.63737665663332876420099637471139430999755859375
+                    feed_id: 1.46581298050294517310021547018550336360931396484375
+                    ele: 7.061401241503109105224211816675961017608642578125
+                    created_epoch: 9.301444243932575517419536481611430644989013671875
+                count: 3
+                first:
+                  key:
+                    completed_at: "completed_at"
+                    updated_at: "updated_at"
+                    group_id: 5.962133916683182377482808078639209270477294921875
+                    created_at: "created_at"
+                    expiration: "expiration"
+                    lon: 2.3021358869347654518833223846741020679473876953125
+                    id: "id"
+                    value: "value"
+                    lat: 5.63737665663332876420099637471139430999755859375
+                    feed_id: 1.46581298050294517310021547018550336360931396484375
+                    ele: 7.061401241503109105224211816675961017608642578125
+                    created_epoch: 9.301444243932575517419536481611430644989013671875
+            id: 0.80082819046101150206595775671303272247314453125
+            key: "key"
+            group:
+              key:
+                updated_at: "updated_at"
+                name: "name"
+                description: "description"
+                created_at: "created_at"
+                id: 6.02745618307040320615897144307382404804229736328125
+            status: "status"
+          created_at: "created_at"
+          id: 0.80082819046101150206595775671303272247314453125
+  BlockFeed:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+      feed:
+        $ref: "#/definitions/Feed"
+      group:
+        $ref: "#/definitions/Group"
+    example:
+      feed:
+        unit_symbol: "unit_symbol"
+        visibility: "private"
+        last_value: "last_value"
+        groups:
+        - updated_at: "updated_at"
+          name: "name"
+          description: "description"
+          created_at: "created_at"
+          id: 6.02745618307040320615897144307382404804229736328125
+        - updated_at: "updated_at"
+          name: "name"
+          description: "description"
+          created_at: "created_at"
+          id: 6.02745618307040320615897144307382404804229736328125
+        description: "description"
+        created_at: "created_at"
+        status_timeout: 2
+        history: true
+        unit_type: "unit_type"
+        enabled: true
+        license: "license"
+        updated_at: "updated_at"
+        name: "name"
+        status_notify: true
+        details:
+          shared_with:
+          - "{}"
+          - "{}"
+          data:
+            last:
+              key:
+                completed_at: "completed_at"
+                updated_at: "updated_at"
+                group_id: 5.962133916683182377482808078639209270477294921875
+                created_at: "created_at"
+                expiration: "expiration"
+                lon: 2.3021358869347654518833223846741020679473876953125
+                id: "id"
+                value: "value"
+                lat: 5.63737665663332876420099637471139430999755859375
+                feed_id: 1.46581298050294517310021547018550336360931396484375
+                ele: 7.061401241503109105224211816675961017608642578125
+                created_epoch: 9.301444243932575517419536481611430644989013671875
+            count: 3
+            first:
+              key:
+                completed_at: "completed_at"
+                updated_at: "updated_at"
+                group_id: 5.962133916683182377482808078639209270477294921875
+                created_at: "created_at"
+                expiration: "expiration"
+                lon: 2.3021358869347654518833223846741020679473876953125
+                id: "id"
+                value: "value"
+                lat: 5.63737665663332876420099637471139430999755859375
+                feed_id: 1.46581298050294517310021547018550336360931396484375
+                ele: 7.061401241503109105224211816675961017608642578125
+                created_epoch: 9.301444243932575517419536481611430644989013671875
+        id: 0.80082819046101150206595775671303272247314453125
+        key: "key"
+        group:
+          key:
+            updated_at: "updated_at"
+            name: "name"
+            description: "description"
+            created_at: "created_at"
+            id: 6.02745618307040320615897144307382404804229736328125
+        status: "status"
+      id: "id"
+      group:
+        updated_at: "updated_at"
+        name: "name"
+        description: "description"
+        feeds:
+        - unit_symbol: "unit_symbol"
+          visibility: "private"
+          last_value: "last_value"
+          groups:
+          - updated_at: "updated_at"
+            name: "name"
+            description: "description"
+            created_at: "created_at"
+            id: 6.02745618307040320615897144307382404804229736328125
+          - updated_at: "updated_at"
+            name: "name"
+            description: "description"
+            created_at: "created_at"
+            id: 6.02745618307040320615897144307382404804229736328125
+          description: "description"
+          created_at: "created_at"
+          status_timeout: 2
+          history: true
+          unit_type: "unit_type"
+          enabled: true
+          license: "license"
+          updated_at: "updated_at"
+          name: "name"
+          status_notify: true
+          details:
+            shared_with:
+            - "{}"
+            - "{}"
+            data:
+              last:
+                key:
+                  completed_at: "completed_at"
+                  updated_at: "updated_at"
+                  group_id: 5.962133916683182377482808078639209270477294921875
+                  created_at: "created_at"
+                  expiration: "expiration"
+                  lon: 2.3021358869347654518833223846741020679473876953125
+                  id: "id"
+                  value: "value"
+                  lat: 5.63737665663332876420099637471139430999755859375
+                  feed_id: 1.46581298050294517310021547018550336360931396484375
+                  ele: 7.061401241503109105224211816675961017608642578125
+                  created_epoch: 9.301444243932575517419536481611430644989013671875
+              count: 3
+              first:
+                key:
+                  completed_at: "completed_at"
+                  updated_at: "updated_at"
+                  group_id: 5.962133916683182377482808078639209270477294921875
+                  created_at: "created_at"
+                  expiration: "expiration"
+                  lon: 2.3021358869347654518833223846741020679473876953125
+                  id: "id"
+                  value: "value"
+                  lat: 5.63737665663332876420099637471139430999755859375
+                  feed_id: 1.46581298050294517310021547018550336360931396484375
+                  ele: 7.061401241503109105224211816675961017608642578125
+                  created_epoch: 9.301444243932575517419536481611430644989013671875
+          id: 0.80082819046101150206595775671303272247314453125
+          key: "key"
+          group:
+            key:
+              updated_at: "updated_at"
+              name: "name"
+              description: "description"
+              created_at: "created_at"
+              id: 6.02745618307040320615897144307382404804229736328125
+          status: "status"
+        - unit_symbol: "unit_symbol"
+          visibility: "private"
+          last_value: "last_value"
+          groups:
+          - updated_at: "updated_at"
+            name: "name"
+            description: "description"
+            created_at: "created_at"
+            id: 6.02745618307040320615897144307382404804229736328125
+          - updated_at: "updated_at"
+            name: "name"
+            description: "description"
+            created_at: "created_at"
+            id: 6.02745618307040320615897144307382404804229736328125
+          description: "description"
+          created_at: "created_at"
+          status_timeout: 2
+          history: true
+          unit_type: "unit_type"
+          enabled: true
+          license: "license"
+          updated_at: "updated_at"
+          name: "name"
+          status_notify: true
+          details:
+            shared_with:
+            - "{}"
+            - "{}"
+            data:
+              last:
+                key:
+                  completed_at: "completed_at"
+                  updated_at: "updated_at"
+                  group_id: 5.962133916683182377482808078639209270477294921875
+                  created_at: "created_at"
+                  expiration: "expiration"
+                  lon: 2.3021358869347654518833223846741020679473876953125
+                  id: "id"
+                  value: "value"
+                  lat: 5.63737665663332876420099637471139430999755859375
+                  feed_id: 1.46581298050294517310021547018550336360931396484375
+                  ele: 7.061401241503109105224211816675961017608642578125
+                  created_epoch: 9.301444243932575517419536481611430644989013671875
+              count: 3
+              first:
+                key:
+                  completed_at: "completed_at"
+                  updated_at: "updated_at"
+                  group_id: 5.962133916683182377482808078639209270477294921875
+                  created_at: "created_at"
+                  expiration: "expiration"
+                  lon: 2.3021358869347654518833223846741020679473876953125
+                  id: "id"
+                  value: "value"
+                  lat: 5.63737665663332876420099637471139430999755859375
+                  feed_id: 1.46581298050294517310021547018550336360931396484375
+                  ele: 7.061401241503109105224211816675961017608642578125
+                  created_epoch: 9.301444243932575517419536481611430644989013671875
+          id: 0.80082819046101150206595775671303272247314453125
+          key: "key"
+          group:
+            key:
+              updated_at: "updated_at"
+              name: "name"
+              description: "description"
+              created_at: "created_at"
+              id: 6.02745618307040320615897144307382404804229736328125
+          status: "status"
+        created_at: "created_at"
+        id: 0.80082819046101150206595775671303272247314453125
+  Token:
+    type: "object"
+    properties:
+      token:
+        type: "string"
+    example:
+      token: "token"
+  Trigger:
+    type: "object"
+    properties:
+      name:
+        type: "string"
+    example:
+      name: "name"
+  inline_response_200:
+    type: "object"
+    properties:
+      data_rate_limit:
+        type: "integer"
+        description: "Max possible actions inside the time window (usually 1 minute)."
+      active_data_rate:
+        type: "integer"
+        description: "Actions taken inside the time window."
+    example:
+      data_rate_limit: 0
+      active_data_rate: 6
+  feed:
+    type: "object"
+    properties:
+      name:
+        type: "string"
+      key:
+        type: "string"
+      description:
+        type: "string"
+      license:
+        type: "string"
+  datum:
+    type: "object"
+    properties:
+      value:
+        type: "string"
+      created_at:
+        type: "string"
+        format: "dateTime"
+      lat:
+        type: "string"
+      lon:
+        type: "string"
+      ele:
+        type: "string"
+      epoch:
+        type: "number"
+  inline_response_200_1_feed:
+    type: "object"
+    properties:
+      id:
+        type: "integer"
+      key:
+        type: "string"
+      name:
+        type: "string"
+    example:
+      name: "name"
+      id: 0
+      key: "key"
+  inline_response_200_1:
+    type: "object"
+    properties:
+      feed:
+        $ref: "#/definitions/inline_response_200_1_feed"
+      parameters:
+        type: "object"
+        properties: {}
+      columns:
+        type: "array"
+        description: "The names of the columns returned as data."
+        items:
+          type: "string"
+      data:
+        type: "array"
+        description: "The actual chart data."
+        items:
+          type: "array"
+          items:
+            type: "string"
+    example:
+      feed:
+        name: "name"
+        id: 0
+        key: "key"
+      data:
+      - - "data"
+        - "data"
+      - - "data"
+        - "data"
+      columns:
+      - "columns"
+      - "columns"
+      parameters: "{}"
+  group:
+    type: "object"
+    properties:
+      name:
+        type: "string"
+      description:
+        type: "string"
+      key:
+        type: "string"
+  usernamegroupsgroup_keydata_location:
+    type: "object"
+    required:
+    - "lat"
+    - "lon"
+    properties:
+      lat:
+        type: "number"
+      lon:
+        type: "number"
+      ele:
+        type: "number"
+    description: "A location record with `lat`, `lon`, and [optional] `ele` properties."
+  usernamegroupsgroup_keydata_feeds:
+    type: "object"
+    required:
+    - "key"
+    - "value"
+    properties:
+      key:
+        type: "string"
+      value:
+        type: "string"
+  group_feed_data:
+    type: "object"
+    required:
+    - "feeds"
+    properties:
+      location:
+        $ref: "#/definitions/usernamegroupsgroup_keydata_location"
+      feeds:
+        type: "array"
+        description: "An array of feed data records with `key` and `value` properties."
+        items:
+          $ref: "#/definitions/usernamegroupsgroup_keydata_feeds"
+      created_at:
+        type: "string"
+        description: "Optional created_at timestamp which will be applied to all feed\
+          \ values created."
+  dashboard:
+    type: "object"
+    properties:
+      name:
+        type: "string"
+      description:
+        type: "string"
+      key:
+        type: "string"
+  usernamedashboardsdashboard_idblocks_block_feeds:
+    type: "object"
+    properties:
+      feed_id:
+        type: "string"
+      group_id:
+        type: "string"
+  block:
+    type: "object"
+    properties:
+      name:
+        type: "string"
+      description:
+        type: "string"
+      key:
+        type: "string"
+      dashboard_id:
+        type: "number"
+      visual_type:
+        type: "string"
+      column:
+        type: "number"
+      row:
+        type: "number"
+      size_x:
+        type: "number"
+      size_y:
+        type: "number"
+      block_feeds:
+        type: "array"
+        items:
+          $ref: "#/definitions/usernamedashboardsdashboard_idblocks_block_feeds"
+      properties:
+        type: "object"
+        properties: {}
+  token:
+    type: "object"
+    properties:
+      token:
+        type: "string"
+  trigger:
+    type: "object"
+    properties:
+      name:
+        type: "string"
+  permission:
+    type: "object"
+    properties:
+      mode:
+        type: "string"
+        default: "r"
+        enum:
+        - "r"
+        - "w"
+        - "rw"
+      scope:
+        type: "string"
+        default: "public"
+        enum:
+        - "secret"
+        - "public"
+        - "user"
+        - "organization"
+      scope_value:
+        type: "string"
+  payload:
+    type: "object"
+    properties:
+      value:
+        type: "string"
+  Feed_details_data:
+    type: "object"
+    properties:
+      first:
+        type: "object"
+        additionalProperties:
+          $ref: "#/definitions/Data"
+      last:
+        type: "object"
+        additionalProperties:
+          $ref: "#/definitions/Data"
+      count:
+        type: "integer"
+        description: "Number of data points stored by this feed."
+    example:
+      last:
+        key:
+          completed_at: "completed_at"
+          updated_at: "updated_at"
+          group_id: 5.962133916683182377482808078639209270477294921875
+          created_at: "created_at"
+          expiration: "expiration"
+          lon: 2.3021358869347654518833223846741020679473876953125
+          id: "id"
+          value: "value"
+          lat: 5.63737665663332876420099637471139430999755859375
+          feed_id: 1.46581298050294517310021547018550336360931396484375
+          ele: 7.061401241503109105224211816675961017608642578125
+          created_epoch: 9.301444243932575517419536481611430644989013671875
+      count: 3
+      first:
+        key:
+          completed_at: "completed_at"
+          updated_at: "updated_at"
+          group_id: 5.962133916683182377482808078639209270477294921875
+          created_at: "created_at"
+          expiration: "expiration"
+          lon: 2.3021358869347654518833223846741020679473876953125
+          id: "id"
+          value: "value"
+          lat: 5.63737665663332876420099637471139430999755859375
+          feed_id: 1.46581298050294517310021547018550336360931396484375
+          ele: 7.061401241503109105224211816675961017608642578125
+          created_epoch: 9.301444243932575517419536481611430644989013671875
+  Feed_details:
+    type: "object"
+    properties:
+      shared_with:
+        type: "array"
+        description: "Access control list for this feed"
+        items:
+          type: "object"
+          properties: {}
+      data:
+        $ref: "#/definitions/Feed_details_data"
+    description: "Additional details about this feed."
+    example:
+      shared_with:
+      - "{}"
+      - "{}"
+      data:
+        last:
+          key:
+            completed_at: "completed_at"
+            updated_at: "updated_at"
+            group_id: 5.962133916683182377482808078639209270477294921875
+            created_at: "created_at"
+            expiration: "expiration"
+            lon: 2.3021358869347654518833223846741020679473876953125
+            id: "id"
+            value: "value"
+            lat: 5.63737665663332876420099637471139430999755859375
+            feed_id: 1.46581298050294517310021547018550336360931396484375
+            ele: 7.061401241503109105224211816675961017608642578125
+            created_epoch: 9.301444243932575517419536481611430644989013671875
+        count: 3
+        first:
+          key:
+            completed_at: "completed_at"
+            updated_at: "updated_at"
+            group_id: 5.962133916683182377482808078639209270477294921875
+            created_at: "created_at"
+            expiration: "expiration"
+            lon: 2.3021358869347654518833223846741020679473876953125
+            id: "id"
+            value: "value"
+            lat: 5.63737665663332876420099637471139430999755859375
+            feed_id: 1.46581298050294517310021547018550336360931396484375
+            ele: 7.061401241503109105224211816675961017608642578125
+            created_epoch: 9.301444243932575517419536481611430644989013671875
+parameters:
+  PermTypePath:
+    name: "type"
+    in: "path"
+    required: true
+    type: "string"
+    x-exportParamName: "Type_"
+  PermTypeIDPath:
+    name: "type_id"
+    in: "path"
+    required: true
+    type: "string"
+    x-exportParamName: "TypeId"
+  StartTime:
+    name: "start_time"
+    in: "query"
+    description: "Start time for filtering, returns records created after given time."
+    required: false
+    type: "string"
+    format: "date-time"
+    x-exportParamName: "StartTime"
+    x-optionalDataType: "Time"
+  EndTime:
+    name: "end_time"
+    in: "query"
+    description: "End time for filtering, returns records created before give time."
+    required: false
+    type: "string"
+    format: "date-time"
+    x-exportParamName: "EndTime"
+    x-optionalDataType: "Time"
+  Limit:
+    name: "limit"
+    in: "query"
+    description: "Limit the number of records returned."
+    required: false
+    type: "integer"
+    x-exportParamName: "Limit"
+    x-optionalDataType: "Int32"
+  DataInclude:
+    name: "include"
+    in: "query"
+    description: "List of Data record fields to include in response as comma separated\
+      \ list. Acceptable values are: `value`, `lat`, `lon`, `ele`, `id`, and `created_at`. "
+    required: false
+    type: "string"
+    x-exportParamName: "Include"
+    x-optionalDataType: "String"
+  UsernamePath:
+    name: "username"
+    in: "path"
+    description: "a valid username string"
+    required: true
+    type: "string"
+    x-exportParamName: "Username"
+  ActivityTypePath:
+    name: "type"
+    in: "path"
+    required: true
+    type: "string"
+    x-exportParamName: "Type_"
+  FeedPath:
+    name: "feed_key"
+    in: "path"
+    description: "a valid feed key"
+    required: true
+    type: "string"
+    x-exportParamName: "FeedKey"
+  FeedParam:
+    name: "feed_key"
+    in: "query"
+    required: false
+    type: "string"
+    x-exportParamName: "FeedKey"
+    x-optionalDataType: "String"
+  GroupPath:
+    name: "group_key"
+    in: "path"
+    required: true
+    type: "string"
+    x-exportParamName: "GroupKey"
+  GroupParam:
+    name: "group_key"
+    in: "query"
+    required: false
+    type: "string"
+    x-exportParamName: "GroupKey"
+    x-optionalDataType: "String"
+  IDPath:
+    name: "id"
+    in: "path"
+    required: true
+    type: "string"
+    x-exportParamName: "Id"
+  DashboardIDPath:
+    name: "dashboard_id"
+    in: "path"
+    required: true
+    type: "string"
+    x-exportParamName: "DashboardId"
+  Data:
+    in: "body"
+    name: "datum"
+    description: "Data record including a `value` field (required) and optionally\
+      \ including: `lat`, `lon`, `ele` (latitude, longitude, and elevation values),\
+      \ and `created_at` (a date/time string)."
+    required: true
+    schema:
+      $ref: "#/definitions/datum"
+    x-exportParamName: "Datum"
+  DataCollection:
+    in: "body"
+    name: "data"
+    description: "A collection of data records including `value` (required) and optionally\
+      \ including: `lat`, `lon`, `ele` (latitude, longitude, and elevation values),\
+      \ and `created_at` (a date/time string)."
+    required: true
+    schema:
+      type: "array"
+      items:
+        $ref: "#/definitions/datum"
+    x-exportParamName: "Data"
+  Permission:
+    in: "body"
+    name: "permission"
+    required: true
+    schema:
+      $ref: "#/definitions/permission"
+    x-exportParamName: "Permission"
+  Feed:
+    in: "body"
+    name: "feed"
+    required: true
+    schema:
+      $ref: "#/definitions/feed"
+    x-exportParamName: "Feed"
+  Group:
+    in: "body"
+    name: "group"
+    required: true
+    schema:
+      $ref: "#/definitions/group"
+    x-examples:
+      application/json: "{\"name\":\"Some Group\", \"description\":\"A collection\
+        \ of feeds\"}"
+      default: "{\"name\":\"Some Group\",\"description\":\"A collection of feeds\"\
+        }"
+    x-exportParamName: "Group"
+  Dashboard:
+    in: "body"
+    name: "dashboard"
+    required: true
+    schema:
+      $ref: "#/definitions/dashboard"
+    x-exportParamName: "Dashboard"
+  Block:
+    in: "body"
+    name: "block"
+    required: true
+    schema:
+      $ref: "#/definitions/block"
+    x-exportParamName: "Block"
+  Token:
+    in: "body"
+    name: "token"
+    required: true
+    schema:
+      $ref: "#/definitions/token"
+    x-exportParamName: "Token"
+  Trigger:
+    in: "body"
+    name: "trigger"
+    required: true
+    schema:
+      $ref: "#/definitions/trigger"
+    x-exportParamName: "Trigger"
+  GroupFeedData:
+    in: "body"
+    name: "group_feed_data"
+    required: true
+    schema:
+      $ref: "#/definitions/group_feed_data"
+    x-exportParamName: "GroupFeedData"
